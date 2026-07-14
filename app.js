@@ -1254,6 +1254,16 @@ window.renderAssetsTab = function() {
         const isActive = symbol === activePair;
         let currentVal = cfg.startPrice;
         
+        // Define color palette based on asset for colorful custom names
+        const assetColors = {
+            'EUR/USD': '#00d2ff', // Vibrant Light Blue
+            'GBP/USD': '#e879f9', // Orchid Pink
+            'XAU/USD': '#ffd700', // Gold Yellow
+            'ETH/USD': '#a78bfa', // Lavender Violet
+            'BTC/USD': '#f97316'  // Bitcoin Orange
+        };
+        const symbolColor = assetColors[symbol] || '#ffffff';
+
         if (isActive && window.forexChartEngine.pair === symbol) {
             currentVal = window.forexChartEngine.currentPrice;
         } else {
@@ -1303,7 +1313,7 @@ window.renderAssetsTab = function() {
             <div class="broker-select-card ${isActive ? 'active' : ''}" style="display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; padding: 1.25rem; min-height: 190px; transition: all 0.3s ease; cursor: default; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
                     <div>
-                        <div style="font-family: var(--font-tech); font-size: 1.2rem; font-weight: bold; color: #fff;">${symbol}</div>
+                        <div style="font-family: var(--font-tech); font-size: 1.2rem; font-weight: bold; color: ${symbolColor}; text-shadow: 0 0 8px ${symbolColor}25;">${symbol}</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;">${assetType}</div>
                     </div>
                     <span class="badge-type ${badgeClass}" style="padding: 0.15rem 0.4rem; font-size: 0.7rem;">
