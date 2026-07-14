@@ -19,6 +19,7 @@ input int      Slippage    = 30;                               // Slippage point
 // Global variables
 string lastExecutedTicket = "";
 datetime lastPollTime = 0;
+bool isFirstPoll = true;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
@@ -49,6 +50,28 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTimer()
 {
+   // Pada poll pertama, baca tiket saat ini dari server cloud untuk diabaikan agar tidak ada eksekusi ulang sinyal lama
+   if(isFirstPoll)
+   {
+      isFirstPoll = false;
+      string cookie = NULL, headers;
+      char post[], result[];
+      int res;
+      ResetLastError();
+      res = WebRequest("GET", SignalURL, cookie, NULL, 5000, post, 0, result, headers);
+      if(res != -1)
+      {
+         string response = CharArrayToString(result);
+         string ticket = GetJSONValue(response, "ticket");
+         if(ticket != "")
+         {
+            lastExecutedTicket = ticket;
+            Print("Webhook Bridge EA MT5 Siap. Sinyal lama diabaikan: ", ticket);
+         }
+      }
+      return;
+   }
+
    // Cegah request menumpuk
    if(TimeCurrent() - lastPollTime < PollIntervalSeconds) return;
    lastPollTime = TimeCurrent();

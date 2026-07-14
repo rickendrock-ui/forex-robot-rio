@@ -919,10 +919,10 @@ function renderBrokerView() {
                     <input type="number" id="brokerBalanceInput" class="form-input" required value="1000000" min="0" step="100000">
                 </div>
                 <div class="form-group">
-                    <label>Webhook EA URL (Gunakan HTTPS ngrok jika di Netlify)</label>
-                    <input type="url" id="brokerWebhookInput" class="form-input" placeholder="Contoh: https://xxxx.ngrok-free.app/signals">
+                    <label>Webhook EA URL (Kosongkan untuk Serverless Cloud gratis)</label>
+                    <input type="url" id="brokerWebhookInput" class="form-input" placeholder="Kosongkan untuk otomatis menggunakan kvdb.io cloud">
                     <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 4px; line-height: 1.4;">
-                        *Catatan: Netlify (HTTPS) memblokir request langsung ke http://localhost karena aturan Mixed Content. Gunakan URL HTTPS ngrok yang menunjuk ke port 5000 komputer Anda.
+                        *Rekomendasi Kantor: Kosongkan untuk otomatis menggunakan database serverless gratis dari kvdb.io. Sinyal dikirim langsung dari Netlify ke cloud, dan MT5 di laptop Anda langsung membaca dari cloud. Tidak membutuhkan Node.js, Python, atau ngrok di laptop Anda!
                     </small>
                 </div>
                 <button type="submit" class="btn-primary" style="width: 100%;">Tautkan Akun Sekarang</button>
@@ -941,7 +941,10 @@ window.connectActiveBroker = function(e) {
     const balInput = document.getElementById('brokerBalanceInput');
     const balanceVal = balInput ? parseFloat(balInput.value) : 1000000.00;
     const webhookInput = document.getElementById('brokerWebhookInput');
-    const webhookVal = webhookInput ? webhookInput.value : '';
+    
+    // Auto-generate free serverless cloud bridge URL if input is empty
+    const defaultWebhook = `https://kvdb.io/rt_bucket_${acc}/trade_signal`;
+    const webhookVal = (webhookInput && webhookInput.value.trim() !== '') ? webhookInput.value.trim() : defaultWebhook;
     
     window.brokerEngine.connectBroker(selectedBrokerId, acc, srv, balanceVal, webhookVal);
     renderBrokerView();
