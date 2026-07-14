@@ -59,13 +59,14 @@ class BrokerEngine {
         this.loadState();
     }
 
-    connectBroker(brokerId, accountId, server, customBalance = null) {
+    connectBroker(brokerId, accountId, server, customBalance = null, webhookUrl = null) {
         const broker = this.brokers.find(b => b.id === brokerId);
         if (!broker) return false;
 
         broker.connected = true;
         broker.accountId = accountId;
         broker.server = server;
+        broker.webhookUrl = webhookUrl;
         
         // Simpan saldo kustom jika dimasukkan oleh pengguna
         if (customBalance !== null && this.brokerBalances[brokerId]) {
@@ -79,6 +80,14 @@ class BrokerEngine {
             broker.balance = this.brokerBalances[brokerId]?.balance || 1000000.00;
         }
         
+        // Log payload ke Terminal API kustom
+        if (window.logToApiTerminal) {
+            window.logToApiTerminal(`POST https://api.metaapi.cloud/users/current/accounts/${brokerId}-${accountId}\nHeaders: {\n  "Authorization-Token": "Bearer METAAPI_TOKEN_SECURE_HASH"\n}\nPayload: {\n  "server": "${server}",\n  "type": "mt4",\n  "magic": 1002,\n  "linkedBalance": ${broker.balance}\n}`, 'request');
+            setTimeout(() => {
+                window.logToApiTerminal(`201 Created (HTTP status code 201)\nResponse: {\n  "accountId": "${brokerId}-${accountId}",\n  "status": "connected",\n  "metaApiServer": "mt-provisioning-3.metaapi.cloud",\n  "connectionType": "CLOUD_PROVISIONING"\n}`, 'response');
+            }, 600);
+        }
+
         // Sinkronisasi saldo & riwayat ke Trading Engine utama
         if (window.forexTradingEngine && this.brokerBalances[brokerId]) {
             const data = this.brokerBalances[brokerId];
@@ -144,14 +153,19 @@ class BrokerEngine {
 
     simulateTopup(amount, paymentMethod) {
         return new Promise((resolve) => {
+            const activeBroker = this.getActiveBroker();
+            if (!activeBroker || !activeBroker.connected) {
+                resolve({ success: false, msg: "Tautkan akun broker sebelum melakukan deposit." });
+                return;
+            }
+
+            // Log payload ke Terminal API kustom
+            if (window.logToApiTerminal) {
+                window.logToApiTerminal(`POST https://api.metaapi.cloud/users/current/accounts/${activeBroker.id}-${activeBroker.accountId}/deposit\nHeaders: {\n  "Authorization-Token": "Bearer METAAPI_TOKEN_SECURE_HASH"\n}\nPayload: {\n  "amount": ${amount},\n  "currency": "IDR",\n  "paymentMethod": "${paymentMethod.toUpperCase()}"\n}`, 'request');
+            }
+
             // Simulate 2-second delay for API authorization
             setTimeout(() => {
-                const activeBroker = this.getActiveBroker();
-                if (!activeBroker || !activeBroker.connected) {
-                    resolve({ success: false, msg: "Tautkan akun broker sebelum melakukan deposit." });
-                    return;
-                }
-
                 // Add balance to main trading engine
                 if (window.forexTradingEngine) {
                     window.forexTradingEngine.balance = parseFloat((window.forexTradingEngine.balance + amount).toFixed(2));
@@ -162,6 +176,22 @@ class BrokerEngine {
                         `Deposit sebesar ${formattedAmount} ditambahkan ke broker ${activeBroker.name} via ${paymentMethod.toUpperCase()}.`
                     );
                     window.forexTradingEngine.saveState();
+                }
+                
+                // Sinkronisasi balik saldo deposit ke database broker
+                let newBalance = amount;
+                if (this.brokerBalances[activeBroker.id]) {
+                    const bData = this.brokerBalances[activeBroker.id];
+                    bData.balance = parseFloat((bData.balance + amount).toFixed(2));
+                    bData.realtimeBalance = parseFloat((bData.realtimeBalance + amount).toFixed(2));
+                    bData.finalBalance = parseFloat((bData.finalBalance + amount).toFixed(2));
+                    activeBroker.balance = bData.balance;
+                    newBalance = bData.balance;
+                }
+                this.saveState();
+
+                if (window.logToApiTerminal) {
+                    window.logToApiTerminal(`200 OK (HTTP status code 200)\nResponse: {\n  "status": "DEPOSIT_SUCCESS",\n  "transactionId": "TX-${Date.now().toString().substr(6)}",\n  "newBalance": ${newBalance},\n  "updatedAt": "${new Date().toISOString()}"\n}`, 'response');
                 }
                 
                 resolve({ success: true, amount });

@@ -7,6 +7,41 @@ window.formatRupiah = function(val) {
     return (isNegative ? '-Rp ' : 'Rp ') + formatted;
 };
 
+window.logToApiTerminal = function(message, type = 'info') {
+    const term = document.getElementById('apiTerminalLog');
+    if (!term) return;
+
+    const time = new Date().toLocaleTimeString('id-ID');
+    let color = '#34d399'; // green for info
+    let prefix = `[INFO ${time}]`;
+
+    if (type === 'request') {
+        color = '#60a5fa'; // blue for requests
+        prefix = `[>> REQUEST ${time}]`;
+    } else if (type === 'response') {
+        color = '#c084fc'; // purple for responses
+        prefix = `[<< RESPONSE ${time}]`;
+    } else if (type === 'error') {
+        color = '#f87171'; // red for errors
+        prefix = `[!! ERROR ${time}]`;
+    } else if (type === 'system') {
+        color = '#fbbf24'; // yellow for system
+        prefix = `[SYSTEM ${time}]`;
+    }
+
+    const logDiv = document.createElement('div');
+    logDiv.style.color = color;
+    logDiv.style.marginBottom = '0.5rem';
+    logDiv.style.borderLeft = `2px solid ${color}`;
+    logDiv.style.paddingLeft = '0.5rem';
+    logDiv.style.fontFamily = 'monospace';
+    logDiv.style.whiteSpace = 'pre-wrap';
+    logDiv.innerHTML = `${prefix} ${message}`;
+
+    term.appendChild(logDiv);
+    term.scrollTop = term.scrollHeight;
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize Navigation & Routing
     initNavigation();
@@ -812,9 +847,10 @@ function renderBrokerView() {
             <div style="text-align: center; padding: 1.5rem 0;">
                 <div class="status-dot active" style="margin: 0 auto 1rem; width: 14px; height: 14px;"></div>
                 <h3 style="margin-bottom: 0.5rem;">Terhubung dengan ${activeBroker.name}</h3>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6;">
                     Nomor Akun: <strong>${activeBroker.accountId}</strong><br>
-                    Server: ${activeBroker.server}
+                    Server: ${activeBroker.server}<br>
+                    ${activeBroker.webhookUrl ? `Webhook EA: <span style="font-family: monospace; font-size: 0.75rem; background: rgba(0, 112, 243, 0.08); border: 1px solid rgba(0,112,243,0.15); padding: 2px 6px; border-radius: 4px; color: var(--primary); display: inline-block; margin-top: 4px; word-break: break-all;">${activeBroker.webhookUrl}</span>` : 'Webhook EA: <em style="color: var(--text-muted);">Tidak dikonfigurasi</em>'}
                 </p>
                 
                 <div class="auto-toggle-container" style="margin-bottom: 1.5rem;">
@@ -875,6 +911,10 @@ function renderBrokerView() {
                     <label>Saldo Akun Riil (Rp)</label>
                     <input type="number" id="brokerBalanceInput" class="form-input" required value="1000000" min="0" step="100000">
                 </div>
+                <div class="form-group">
+                    <label>Webhook EA URL (Opsional)</label>
+                    <input type="url" id="brokerWebhookInput" class="form-input" placeholder="Contoh: http://localhost:5000/signals">
+                </div>
                 <button type="submit" class="btn-primary" style="width: 100%;">Tautkan Akun Sekarang</button>
             </form>
         `;
@@ -890,8 +930,10 @@ window.connectActiveBroker = function(e) {
     const srv = document.getElementById('brokerServer').value;
     const balInput = document.getElementById('brokerBalanceInput');
     const balanceVal = balInput ? parseFloat(balInput.value) : 1000000.00;
+    const webhookInput = document.getElementById('brokerWebhookInput');
+    const webhookVal = webhookInput ? webhookInput.value : '';
     
-    window.brokerEngine.connectBroker(selectedBrokerId, acc, srv, balanceVal);
+    window.brokerEngine.connectBroker(selectedBrokerId, acc, srv, balanceVal, webhookVal);
     renderBrokerView();
 };
 

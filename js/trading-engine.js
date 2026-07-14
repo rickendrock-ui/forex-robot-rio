@@ -149,6 +149,15 @@ class ForexTradingEngine {
         }
 
         this.realtimeBalance = parseFloat((this.balance + floatingPnL).toFixed(2));
+        
+        // Sinkronisasi realtimeBalance ke broker jika terhubung
+        if (window.brokerEngine) {
+            const activeBroker = window.brokerEngine.getActiveBroker();
+            if (activeBroker && activeBroker.connected && window.brokerEngine.brokerBalances[activeBroker.id]) {
+                window.brokerEngine.brokerBalances[activeBroker.id].realtimeBalance = this.realtimeBalance;
+            }
+        }
+        
         this.notifyState();
     }
 
@@ -198,6 +207,56 @@ class ForexTradingEngine {
 
         this.positions.push(position);
         this.addLog(`OPEN POSISI ${type} (${this.currentPair} Lot: ${lotSize})`, reason);
+
+        // Log payload ke Terminal API kustom
+        if (window.logToApiTerminal) {
+            const activeBroker = window.brokerEngine ? window.brokerEngine.getActiveBroker() : null;
+            const isBroker = activeBroker && activeBroker.connected;
+            const endpoint = isBroker ? `https://api.metaapi.cloud/users/current/accounts/${activeBroker.id}-${activeBroker.accountId}/orders` : `https://api.metaapi.cloud/users/demo/sandbox/orders`;
+            
+            window.logToApiTerminal(`POST ${endpoint}\nHeaders: {\n  "Authorization-Token": "Bearer METAAPI_TOKEN_SECURE_HASH"\n}\nPayload: {\n  "symbol": "${this.currentPair.replace('/', '')}",\n  "actionType": "ORDER_TYPE_${type}",\n  "volume": ${lotSize},\n  "stopLoss": ${slPrice.toFixed(config.decimals)},\n  "takeProfit": ${tpPrice.toFixed(config.decimals)}\n}`, 'request');
+            
+            setTimeout(() => {
+                window.logToApiTerminal(`200 OK (HTTP status code 200)\nResponse: {\n  "orderId": "MT-${Date.now().toString().substr(6)}",\n  "status": "ORDER_FILLED",\n  "executionPrice": ${price.toFixed(config.decimals)},\n  "marginUsed": "${window.formatRupiah ? window.formatRupiah(lotSize * 1500000) : 'Rp ' + (lotSize * 1500000)}",\n  "brokerTime": "${new Date().toISOString()}"\n}`, 'response');
+            }, 500);
+        }
+
+        // Kirim Webhook ke Expert Advisor (jika dikonfigurasi)
+        if (window.brokerEngine) {
+            const activeBroker = window.brokerEngine.getActiveBroker();
+            if (activeBroker && activeBroker.connected && activeBroker.webhookUrl) {
+                const webhookPayload = {
+                    action: "OPEN",
+                    type: type,
+                    symbol: this.currentPair.replace('/', ''),
+                    volume: lotSize,
+                    sl: parseFloat(slPrice.toFixed(config.decimals)),
+                    tp: parseFloat(tpPrice.toFixed(config.decimals)),
+                    ticket: position.id
+                };
+                
+                if (window.logToApiTerminal) {
+                    window.logToApiTerminal(`KIRIM WEBHOOK EA: POST ${activeBroker.webhookUrl}\nPayload: ${JSON.stringify(webhookPayload, null, 2)}`, 'system');
+                }
+                
+                fetch(activeBroker.webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(webhookPayload)
+                })
+                .then(res => {
+                    if (window.logToApiTerminal) {
+                        window.logToApiTerminal(`Webhook EA Berhasil Terkirim! Status: ${res.status} ${res.statusText}`, 'info');
+                    }
+                })
+                .catch(err => {
+                    if (window.logToApiTerminal) {
+                        window.logToApiTerminal(`Gagal mengirim Webhook ke EA: ${err.message}`, 'error');
+                    }
+                });
+            }
+        }
+
         this.saveState();
         this.notifyState();
     }
@@ -237,6 +296,70 @@ class ForexTradingEngine {
         
         const formattedPnL = window.formatRupiah ? window.formatRupiah(finalPnL) : 'Rp ' + finalPnL.toLocaleString('id-ID');
         this.addLog(`CLOSE POSISI ${pos.type}`, `${reason} Hasil: ${finalPnL >= 0 ? '+' : ''}${formattedPnL}`);
+
+        // Log payload ke Terminal API kustom
+        if (window.logToApiTerminal) {
+            const activeBroker = window.brokerEngine ? window.brokerEngine.getActiveBroker() : null;
+            const isBroker = activeBroker && activeBroker.connected;
+            const endpoint = isBroker ? `https://api.metaapi.cloud/users/current/accounts/${activeBroker.id}-${activeBroker.accountId}/orders/${pos.id}` : `https://api.metaapi.cloud/users/demo/sandbox/orders/${pos.id}`;
+            
+            window.logToApiTerminal(`DELETE ${endpoint}\nHeaders: {\n  "Authorization-Token": "Bearer METAAPI_TOKEN_SECURE_HASH"\n}\nPayload: {\n  "closePrice": ${currentPrice.toFixed(config.decimals)},\n  "reason": "${reason}"\n}`, 'request');
+            
+            setTimeout(() => {
+                window.logToApiTerminal(`200 OK (HTTP status code 200)\nResponse: {\n  "orderId": "${pos.id.replace('pos_', 'MT-')}",\n  "status": "ORDER_CLOSED",\n  "realizedPnL": ${finalPnL},\n  "updatedBalance": ${this.balance}\n}`, 'response');
+            }, 500);
+        }
+        // Kirim Webhook ke Expert Advisor (jika dikonfigurasi)
+        if (window.brokerEngine) {
+            const activeBroker = window.brokerEngine.getActiveBroker();
+            if (activeBroker && activeBroker.connected && activeBroker.webhookUrl) {
+                const webhookPayload = {
+                    action: "CLOSE",
+                    type: pos.type,
+                    symbol: pos.pair.replace('/', ''),
+                    volume: pos.size,
+                    sl: pos.sl,
+                    tp: pos.tp,
+                    ticket: pos.id
+                };
+                
+                if (window.logToApiTerminal) {
+                    window.logToApiTerminal(`KIRIM WEBHOOK EA: POST ${activeBroker.webhookUrl}\nPayload: ${JSON.stringify(webhookPayload, null, 2)}`, 'system');
+                }
+                
+                fetch(activeBroker.webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(webhookPayload)
+                })
+                .then(res => {
+                    if (window.logToApiTerminal) {
+                        window.logToApiTerminal(`Webhook EA Berhasil Terkirim! Status: ${res.status} ${res.statusText}`, 'info');
+                    }
+                })
+                .catch(err => {
+                    if (window.logToApiTerminal) {
+                        window.logToApiTerminal(`Gagal mengirim Webhook ke EA: ${err.message}`, 'error');
+                    }
+                });
+            }
+        }
+
+        // Sinkronisasi balik saldo & riwayat ke database broker aktif agar persisten
+        if (window.brokerEngine) {
+            const activeBroker = window.brokerEngine.getActiveBroker();
+            if (activeBroker && activeBroker.connected && window.brokerEngine.brokerBalances[activeBroker.id]) {
+                const brokerData = window.brokerEngine.brokerBalances[activeBroker.id];
+                brokerData.balance = this.balance;
+                brokerData.realtimeBalance = this.balance;
+                brokerData.finalBalance = this.balance;
+                brokerData.tradeHistory = [...this.tradeHistory];
+                brokerData.tradeLogs = [...this.tradeLogs];
+                activeBroker.balance = this.balance;
+                window.brokerEngine.saveState();
+            }
+        }
+
         this.saveState();
         this.notifyState();
     }

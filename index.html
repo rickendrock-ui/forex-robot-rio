@@ -512,6 +512,27 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- API Terminal Log (MetaAPI & Webhook Console) -->
+                    <div class="glass-card" style="margin-top: 1.5rem; padding: 1.25rem;">
+                        <h3 class="glass-card-title" style="margin-bottom: 0.75rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                            <span>
+                                <svg viewBox="0 0 24 24" style="fill: var(--primary);"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12H5v-2h7v2zm3-4H5V8h10v2zm5 8H5v-2h15v2zm0-4h-3v-4h3v4z"/></svg>
+                                Terminal Log API & Webhook (MetaAPI Simulation Feed)
+                            </span>
+                            <span style="font-size: 0.75rem; color: var(--success); font-family: var(--font-tech); display: flex; align-items: center; gap: 0.35rem;">
+                                <span class="status-dot active" style="width:6px; height:6px; margin:0;"></span> SIMULASI AKTIF
+                            </span>
+                        </h3>
+                        <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 1rem; line-height: 1.4;">
+                            Terminal ini memantau payload JSON HTTP REST Request/Response MetaAPI & Webhook Payload yang terkirim dari dashboard ke Exness Cloud Gateway saat Anda melakukan penautan, open/close posisi, atau top-up.
+                        </p>
+                        <div id="apiTerminalLog" style="background: #0d0f1a; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; font-family: 'Consolas', 'Courier New', monospace; font-size: 0.8rem; color: #34d399; height: 260px; overflow-y: auto; line-height: 1.5; white-space: pre-wrap; word-break: break-all;">
+[SYSTEM] Terminal diinisialisasi. Menunggu sinyal trading...
+[SYSTEM] Server MetaAPI Gateway: Terhubung pada https://api.metaapi.cloud (Simulated Gateway)
+[SYSTEM] Silakan buka posisi manual atau hubungkan broker untuk memulai logging.
+                        </div>
+                    </div>
                 </div>
 
             </div>
