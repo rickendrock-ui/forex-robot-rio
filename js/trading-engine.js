@@ -117,6 +117,8 @@ class ForexTradingEngine {
         let floatingPnL = 0;
         
         // Loop backwards to allow safely removing closed positions
+        for (let i = this.positions.length - 1; i >= 0; i--) {
+            const pos = this.positions[i];
             const config = window.ASSET_CONFIGS ? (window.ASSET_CONFIGS[pos.pair] || window.ASSET_CONFIGS['EUR/USD']) : { pipScale: 0.0001 };
             const scale = config.pipScale;
             let pipDiff = 0;

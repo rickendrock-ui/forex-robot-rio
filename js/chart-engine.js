@@ -199,19 +199,54 @@ class ForexChartEngine {
         const width = this.canvas.width / window.devicePixelRatio;
         const height = this.canvas.height / window.devicePixelRatio;
         
-        // Clear screen with neon space vibe
-        this.ctx.fillStyle = '#070712';
+        // Deteksi tema broker yang dikaitkan (mirroring)
+        const activeBroker = window.brokerEngine ? window.brokerEngine.getActiveBroker() : null;
+        const isConnected = activeBroker && activeBroker.connected;
+        const brokerId = isConnected ? activeBroker.id : 'demo';
+        
+        const themes = {
+            exness: {
+                bg: '#0d0d0d',
+                bullish: '#ffc107', // Gold Exness
+                bearish: '#ff5722', // Orange-red
+                ema: '#ffe135',
+                hudLabel: 'EXNESS LIVE FEED'
+            },
+            mifx: {
+                bg: '#0a101f',
+                bullish: '#00d2ff', // Cyan-blue MIFX
+                bearish: '#f43f5e', // Rose
+                ema: '#00f5d4',
+                hudLabel: 'MIFX REAL FEED'
+            },
+            ajaib: {
+                bg: '#041611',
+                bullish: '#10b981', // Emerald Ajaib
+                bearish: '#f97316', // Orange
+                ema: '#34d399',
+                hudLabel: 'AJAIB PREMIUM FEED'
+            },
+            demo: {
+                bg: '#070712',
+                bullish: '#00ff87',
+                bearish: '#ff007f',
+                ema: '#00f2fe',
+                hudLabel: 'DEMO SANDBOX FEED'
+            }
+        };
+
+        const theme = themes[brokerId] || themes.demo;
+        this.ctx.fillStyle = theme.bg;
         this.ctx.fillRect(0, 0, width, height);
 
-        // Subdivide height: 70% main chart, 30% RSI pane
         const mainChartHeight = height * 0.65;
         const rsiChartHeight = height * 0.25;
         const rsiTop = height * 0.72;
 
         this.drawGrid(width, mainChartHeight, rsiTop, rsiChartHeight);
-        this.drawMainChart(width, mainChartHeight);
+        this.drawMainChart(width, mainChartHeight, theme);
         this.drawRsiChart(width, rsiTop, rsiChartHeight);
-        this.drawHUD(width, height);
+        this.drawHUD(width, height, theme);
     }
 
     drawGrid(width, mainHeight, rsiTop, rsiHeight) {
@@ -264,7 +299,7 @@ class ForexChartEngine {
         });
     }
 
-    drawMainChart(width, mainHeight) {
+    drawMainChart(width, mainHeight, theme = { bullish: '#00ff87', bearish: '#ff007f', ema: '#00f2fe', bg: '#070712' }) {
         const ctx = this.ctx;
         const visibleCandlesCount = this.candles.length;
         if (visibleCandlesCount === 0) return;
@@ -307,7 +342,7 @@ class ForexChartEngine {
             const isBullish = c.close >= c.open;
 
             // Wick
-            ctx.strokeStyle = isBullish ? '#00ff87' : '#ff007f';
+            ctx.strokeStyle = isBullish ? theme.bullish : theme.bearish;
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(x, yHigh);
@@ -315,7 +350,7 @@ class ForexChartEngine {
             ctx.stroke();
 
             // Body
-            ctx.fillStyle = isBullish ? '#00ff87' : '#ff007f';
+            ctx.fillStyle = isBullish ? theme.bullish : theme.bearish;
             const top = Math.min(yOpen, yClose);
             const height = Math.max(Math.abs(yOpen - yClose), 1.5);
             
@@ -323,7 +358,7 @@ class ForexChartEngine {
             if (i === visibleCandlesCount - 1) {
                 ctx.save();
                 ctx.shadowBlur = 12;
-                ctx.shadowColor = isBullish ? 'rgba(0,255,135,0.7)' : 'rgba(255,0,127,0.7)';
+                ctx.shadowColor = isBullish ? theme.bullish : theme.bearish;
             }
             
             ctx.fillRect(x - candleWidth / 2, top, candleWidth, height);
@@ -333,8 +368,8 @@ class ForexChartEngine {
             }
         }
 
-        // Draw EMA 20 Line (Neon Blue Glow)
-        ctx.strokeStyle = '#00f2fe';
+        // Draw EMA 20 Line (Themed Glow)
+        ctx.strokeStyle = theme.ema;
         ctx.lineWidth = 2;
         ctx.beginPath();
         for (let i = 0; i < visibleCandlesCount; i++) {
@@ -347,7 +382,7 @@ class ForexChartEngine {
         }
         ctx.save();
         ctx.shadowBlur = 8;
-        ctx.shadowColor = 'rgba(0, 242, 254, 0.5)';
+        ctx.shadowColor = theme.ema;
         ctx.stroke();
         ctx.restore();
 
@@ -366,7 +401,7 @@ class ForexChartEngine {
         // Draw Current Price Horizontal Line & Tag
         const currentY = getY(this.currentPrice);
         const lastCandle = this.candles[this.candles.length - 1];
-        const color = lastCandle.close >= lastCandle.open ? '#00ff87' : '#ff007f';
+        const color = lastCandle.close >= lastCandle.open ? theme.bullish : theme.bearish;
         
         ctx.strokeStyle = color;
         ctx.lineWidth = 1;
@@ -380,7 +415,7 @@ class ForexChartEngine {
         // Current Price Label Badge
         ctx.fillStyle = color;
         ctx.fillRect(width - this.paddingRight, currentY - 8, this.paddingRight, 16);
-        ctx.fillStyle = '#070712';
+        ctx.fillStyle = theme.bg || '#070712';
         ctx.font = 'bold 10px Rajdhani';
         ctx.fillText(this.currentPrice.toFixed(this.getDecimals()), width - this.paddingRight + 4, currentY + 4);
     }
@@ -423,16 +458,16 @@ class ForexChartEngine {
         ctx.fillText(`RSI (14): ${this.rsi[this.rsi.length - 1]?.toFixed(2) || '50.00'}`, this.paddingLeft + 5, rsiTop - 6);
     }
 
-    drawHUD(width, height) {
+    drawHUD(width, height, theme = { ema: '#00f2fe', hudLabel: 'DEMO SANDBOX FEED' }) {
         // Draw HUD details: Pair Name, timeframe, etc.
         const ctx = this.ctx;
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 14px Rajdhani';
-        ctx.fillText(`${this.pair} • Live 1m Candle`, this.paddingLeft, this.paddingTop - 12);
+        ctx.fillText(`${this.pair} • ${theme.hudLabel}`, this.paddingLeft, this.paddingTop - 12);
         
-        ctx.fillStyle = '#00f2fe';
+        ctx.fillStyle = theme.ema;
         ctx.font = '11px Outfit';
-        ctx.fillText(`EMA(20): ${this.ema20[this.ema20.length - 1]?.toFixed(this.getDecimals()) || '0.00000'}`, this.paddingLeft + 160, this.paddingTop - 12);
+        ctx.fillText(`EMA(20): ${this.ema20[this.ema20.length - 1]?.toFixed(this.getDecimals()) || '0.00000'}`, this.paddingLeft + 220, this.paddingTop - 12);
     }
 }
 
