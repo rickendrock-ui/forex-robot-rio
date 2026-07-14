@@ -1161,7 +1161,6 @@ window.renderAssetsTab = function() {
             currentVal = window.forexChartEngine.currentPrice;
         } else {
             if (!cfg.mockPrice) cfg.mockPrice = cfg.startPrice;
-            // Simulasikan pergerakan kecil agar tampak "hidup"
             cfg.mockPrice += (Math.random() - 0.5) * cfg.volatility * 0.4;
             currentVal = cfg.mockPrice;
         }
@@ -1180,9 +1179,32 @@ window.renderAssetsTab = function() {
 
         const volLabel = cfg.volatility > 5 ? 'VIVID' : (cfg.volatility > 0.5 ? 'MODERATE' : 'STABLE');
 
+        // Cari transaksi aktif untuk aset ini
+        const assetPositions = window.forexTradingEngine.positions.filter(p => p.pair === symbol);
+        const hasPositions = assetPositions.length > 0;
+        
+        let positionsHTML = '';
+        if (hasPositions) {
+            const totalPnL = assetPositions.reduce((sum, p) => sum + p.pnl, 0);
+            const isProfit = totalPnL >= 0;
+            const pnlColor = isProfit ? 'var(--success)' : 'var(--danger)';
+            positionsHTML = `
+                <div style="margin: 0.5rem 0 0.85rem 0; padding: 0.5rem; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="color: var(--text-muted); font-size: 0.65rem;">POSISI AKTIF</div>
+                        <div style="font-weight: bold; color: #fff;">${assetPositions.length} Posisi</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: var(--text-muted); font-size: 0.65rem;">FLOATING PNL</div>
+                        <div style="font-weight: bold; color: ${pnlColor};">${isProfit ? '+' : ''}${window.formatRupiah(totalPnL)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
         return `
-            <div class="broker-select-card ${isActive ? 'active' : ''}" style="display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; padding: 1.25rem; min-height: 160px; transition: all 0.3s ease; cursor: default; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div class="broker-select-card ${isActive ? 'active' : ''}" style="display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; padding: 1.25rem; min-height: 190px; transition: all 0.3s ease; cursor: default; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
                     <div>
                         <div style="font-family: var(--font-tech); font-size: 1.2rem; font-weight: bold; color: #fff;">${symbol}</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;">${assetType}</div>
@@ -1192,14 +1214,16 @@ window.renderAssetsTab = function() {
                     </span>
                 </div>
                 
-                <div style="margin-bottom: 1rem;">
+                <div style="margin-bottom: 0.5rem;">
                     <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Harga Live</div>
                     <div class="tech-font" style="font-size: 1.4rem; font-weight: bold; color: ${isActive ? 'var(--success)' : 'var(--primary)'}; margin-top: 0.2rem;">
                         ${formattedPrice}
                     </div>
                 </div>
 
-                <div>
+                ${positionsHTML}
+
+                <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: auto;">
                     ${isActive ? `
                         <button class="btn-primary" style="width: 100%; padding: 0.5rem; background: rgba(0, 255, 135, 0.15); border: 1px solid var(--success); color: var(--success); cursor: default;" disabled>
                             Aset Aktif
@@ -1209,6 +1233,12 @@ window.renderAssetsTab = function() {
                             Aktifkan Trading
                         </button>
                     `}
+                    
+                    ${hasPositions ? `
+                        <button class="btn-close-position" style="width: 100%; padding: 0.45rem; font-size: 0.75rem;" onclick="closeAllPositionsForAsset('${symbol}')">
+                            Close Posisi Manual
+                        </button>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -1237,4 +1267,25 @@ window.activateAssetFromTab = function(symbol) {
     }
 
     window.renderAssetsTab();
+};
+
+window.closeAllPositionsForAsset = function(symbol) {
+    const positionsToClose = window.forexTradingEngine.positions.filter(p => p.pair === symbol);
+    if (positionsToClose.length === 0) return;
+    
+    if (confirm(`Apakah Anda yakin ingin menutup semua posisi aktif untuk ${symbol}?`)) {
+        let closePrice = window.forexChartEngine.currentPrice;
+        if (window.forexChartEngine.pair !== symbol) {
+            const config = window.ASSET_CONFIGS[symbol];
+            closePrice = config ? config.mockPrice || config.startPrice : 1.0;
+        }
+
+        for (let i = window.forexTradingEngine.positions.length - 1; i >= 0; i--) {
+            const pos = window.forexTradingEngine.positions[i];
+            if (pos.pair === symbol) {
+                window.forexTradingEngine.closePosition(pos.id, closePrice, "Ditutup manual dari tab Pilihan Aset.");
+            }
+        }
+        window.renderAssetsTab();
+    }
 };
