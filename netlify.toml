@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+
+# You can add redirect rules or custom headers here if needed in the future.
+# For example, to handle SPA routing (if you add client-side routing later):
+# [[redirects]]
+#   from = "/*"
+#   to = "/index.html"
+#   status = 200
