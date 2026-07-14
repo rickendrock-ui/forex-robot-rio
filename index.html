@@ -113,6 +113,30 @@
 
                 <!-- 1. DASHBOARD VIEW -->
                 <div id="dashboard-tab" class="viewport-panel active">
+                    <!-- Broker Status HUD Bar -->
+                    <div class="glass-card" style="padding: 0.75rem 1.25rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.04); background: rgba(255,255,255,0.01);">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div class="status-dot" id="dashBrokerStatusDot" style="width: 10px; height: 10px;"></div>
+                            <div>
+                                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Koneksi Akun Aktif</span>
+                                <div id="dashBrokerStatusText" style="font-family: var(--font-tech); font-weight: bold; font-size: 0.95rem; color: #fff; margin-top: 0.15rem;">
+                                    Demo Sandbox (Akun Simulasi)
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align: right; display: flex; align-items: center; gap: 0.75rem;">
+                            <div style="text-align: right;">
+                                <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Aset Aktif</span>
+                                <div id="dashActiveAsset" class="tech-font" style="font-weight: bold; font-size: 0.95rem; color: var(--primary); margin-top: 0.15rem;">
+                                    EUR/USD
+                                </div>
+                            </div>
+                            <button id="btnDashCloseAll" class="btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.75rem; background: rgba(255, 0, 127, 0.1); border: 1px solid var(--danger); color: var(--danger); cursor: pointer; display: none;">
+                                Close Posisi
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Balance Metric Row -->
                     <div class="balance-widget-grid">
                         <div class="balance-card initial-bal">

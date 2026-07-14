@@ -41,6 +41,24 @@ document.addEventListener('DOMContentLoaded', () => {
     renderBrokerView();
     renderAssetsTab();
 
+    // Pastikan saldo & riwayat disinkronkan dari broker jika terhubung pada saat load
+    if (window.brokerEngine && window.forexTradingEngine) {
+        const activeBroker = window.brokerEngine.getActiveBroker();
+        if (activeBroker && activeBroker.connected) {
+            const data = window.brokerEngine.brokerBalances[activeBroker.id];
+            if (data && (window.forexTradingEngine.tradeHistory.length !== data.tradeHistory.length || window.forexTradingEngine.balance === 150000000.00 || window.forexTradingEngine.balance === 10000.00)) {
+                window.forexTradingEngine.initialBalance = data.initialBalance;
+                window.forexTradingEngine.balance = data.balance;
+                window.forexTradingEngine.realtimeBalance = data.realtimeBalance;
+                window.forexTradingEngine.finalBalance = data.finalBalance;
+                window.forexTradingEngine.tradeHistory = [...data.tradeHistory];
+                window.forexTradingEngine.tradeLogs = [...data.tradeLogs];
+                window.forexTradingEngine.saveState();
+                updateDOM(window.forexTradingEngine); // Redraw UI
+            }
+        }
+    }
+
     // Start Simulation Loops
     startSimulationLoops();
 
@@ -150,6 +168,34 @@ function startSimulationLoops() {
 
 // 4. Update UI Components (Dynamic DOM manipulation)
 function updateDOM(state) {
+    // Update Broker HUD Status di Dashboard
+    const dashBrokerDot = document.getElementById('dashBrokerStatusDot');
+    const dashBrokerText = document.getElementById('dashBrokerStatusText');
+    const dashActiveAsset = document.getElementById('dashActiveAsset');
+    const btnDashCloseAll = document.getElementById('btnDashCloseAll');
+
+    if (dashBrokerDot && dashBrokerText && dashActiveAsset) {
+        const activeBroker = window.brokerEngine ? window.brokerEngine.getActiveBroker() : null;
+        const isConnected = activeBroker && activeBroker.connected;
+        
+        if (isConnected) {
+            dashBrokerDot.classList.add('active');
+            dashBrokerText.innerHTML = `${activeBroker.name} <span style="color:var(--text-muted); font-size:0.8rem;">(Rek: ${activeBroker.accountId})</span> <span style="font-size:0.75rem; color:var(--success); border: 1px solid var(--success); padding: 1px 4px; border-radius: 4px; margin-left: 5px;">LIVE</span>`;
+        } else {
+            dashBrokerDot.classList.remove('active');
+            dashBrokerText.innerHTML = `Demo Sandbox <span style="color:var(--text-muted); font-size:0.8rem;">(Akun Simulasi)</span> <span style="font-size:0.75rem; color:var(--primary); border: 1px solid var(--primary); padding: 1px 4px; border-radius: 4px; margin-left: 5px;">DEMO</span>`;
+        }
+        
+        const currentPair = window.forexTradingEngine.currentPair || 'EUR/USD';
+        dashActiveAsset.textContent = currentPair;
+
+        // Tampilkan tombol close posisi jika ada transaksi aktif pada aset ini
+        if (btnDashCloseAll) {
+            const hasActivePos = state.positions && state.positions.some(p => p.pair === currentPair);
+            btnDashCloseAll.style.display = hasActivePos ? 'block' : 'none';
+        }
+    }
+
     // Balances
     const initialBalEl = document.getElementById('initialBalance');
     const realtimeBalEl = document.getElementById('realtimeBalance');
@@ -911,6 +957,25 @@ function setupFormListeners() {
     if (sellBtn) {
         sellBtn.onclick = () => {
             window.forexTradingEngine.openPosition('SELL', window.forexChartEngine.currentPrice);
+        };
+    }
+
+    // Dashboard HUD Close active positions button
+    const btnDashCloseAll = document.getElementById('btnDashCloseAll');
+    if (btnDashCloseAll) {
+        btnDashCloseAll.onclick = () => {
+            const currentPair = window.forexTradingEngine.currentPair;
+            const positionsToClose = window.forexTradingEngine.positions.filter(p => p.pair === currentPair);
+            if (positionsToClose.length === 0) return;
+            
+            if (confirm(`Apakah Anda yakin ingin menutup semua posisi aktif untuk ${currentPair}?`)) {
+                for (let i = window.forexTradingEngine.positions.length - 1; i >= 0; i--) {
+                    const pos = window.forexTradingEngine.positions[i];
+                    if (pos.pair === currentPair) {
+                        window.forexTradingEngine.closePosition(pos.id, window.forexChartEngine.currentPrice, "Ditutup cepat dari HUD Dashboard.");
+                    }
+                }
+            }
         };
     }
 

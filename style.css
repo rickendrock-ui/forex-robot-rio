@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
 
 :root {
-    --bg-dark: #070712;
-    --bg-panel: rgba(15, 15, 35, 0.45);
-    --bg-panel-solid: #0d0d21;
+    --bg-dark: #141526;
+    --bg-panel: rgba(30, 32, 60, 0.45);
+    --bg-panel-solid: #1d1f3b;
     --border-color: rgba(255, 255, 255, 0.08);
     --border-glow: rgba(0, 242, 254, 0.15);
     --primary: #00f2fe; /* Neon Cyan */
