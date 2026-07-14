@@ -1,27 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap');
 
 :root {
-    --bg-dark: #141526;
-    --bg-panel: rgba(30, 32, 60, 0.45);
-    --bg-panel-solid: #1d1f3b;
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-glow: rgba(0, 242, 254, 0.15);
-    --primary: #00f2fe; /* Neon Cyan */
-    --primary-glow: rgba(0, 242, 254, 0.4);
-    --secondary: #4facfe; /* Neon Blue */
-    --accent: #d800ff; /* Purple Neon */
-    --accent-glow: rgba(216, 0, 255, 0.4);
-    --success: #00ff87; /* Neon Green */
-    --success-glow: rgba(0, 255, 135, 0.3);
-    --danger: #ff007f; /* Neon Pink/Red */
-    --danger-glow: rgba(255, 0, 127, 0.3);
-    --text-main: #f0f3ff;
-    --text-muted: #8c9bb4;
+    --bg-dark: #ffffff; /* Solid White */
+    --bg-panel: rgba(241, 245, 249, 0.75); /* Soft slate grey transcard */
+    --bg-panel-solid: #f8fafc; /* Slate 50 for solid panels */
+    --border-color: rgba(15, 23, 42, 0.07); /* Dark slate subtle border */
+    --border-glow: rgba(0, 112, 243, 0.08);
+    --primary: #0070f3; /* Electric Blue */
+    --primary-glow: rgba(0, 112, 243, 0.15);
+    --secondary: #0051a8;
+    --accent: #7928ca; /* Deep Purple */
+    --accent-glow: rgba(121, 40, 202, 0.15);
+    --success: #0f8b50; /* Rich Forest Green */
+    --success-glow: rgba(15, 139, 80, 0.15);
+    --danger: #d32f2f; /* Deep Red */
+    --danger-glow: rgba(211, 47, 47, 0.15);
+    --text-main: #0f172a; /* Slate 900 */
+    --text-muted: #475569; /* Slate 600 */
     --font-sans: 'Outfit', sans-serif;
     --font-tech: 'Rajdhani', sans-serif;
     --glass-blur: blur(20px);
     --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 0 1px 1px rgba(255, 255, 255, 0.1);
+    --card-shadow: 0 8px 30px 0 rgba(15, 23, 42, 0.04), inset 0 0 1px 1px rgba(255, 255, 255, 0.9);
 }
 
 * {
@@ -433,8 +433,8 @@ header {
 }
 
 .glass-card:hover {
-    border-color: rgba(0, 242, 254, 0.25);
-    box-shadow: 0 12px 40px rgba(0, 242, 254, 0.08), inset 0 0 1px 1px rgba(255, 255, 255, 0.15);
+    border-color: var(--primary);
+    box-shadow: 0 12px 40px var(--primary-glow), inset 0 0 1px 1px rgba(255, 255, 255, 0.4);
     transform: translateY(-5px);
 }
 
