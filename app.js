@@ -919,8 +919,11 @@ function renderBrokerView() {
                     <input type="number" id="brokerBalanceInput" class="form-input" required value="1000000" min="0" step="100000">
                 </div>
                 <div class="form-group">
-                    <label>Webhook EA URL (Opsional)</label>
-                    <input type="url" id="brokerWebhookInput" class="form-input" placeholder="Contoh: http://localhost:5000/signals">
+                    <label>Webhook EA URL (Gunakan HTTPS ngrok jika di Netlify)</label>
+                    <input type="url" id="brokerWebhookInput" class="form-input" placeholder="Contoh: https://xxxx.ngrok-free.app/signals">
+                    <small style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 4px; line-height: 1.4;">
+                        *Catatan: Netlify (HTTPS) memblokir request langsung ke http://localhost karena aturan Mixed Content. Gunakan URL HTTPS ngrok yang menunjuk ke port 5000 komputer Anda.
+                    </small>
                 </div>
                 <button type="submit" class="btn-primary" style="width: 100%;">Tautkan Akun Sekarang</button>
             </form>
