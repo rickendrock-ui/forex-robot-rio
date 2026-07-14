@@ -103,6 +103,7 @@ body {
 }
 
 .bg-grid {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -179,7 +180,7 @@ aside {
     font-size: 1.6rem;
     font-weight: 700;
     letter-spacing: 2px;
-    background: linear-gradient(to right, #fff, #a3b8cc);
+    background: linear-gradient(to right, var(--primary), var(--accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -275,7 +276,7 @@ aside {
 }
 
 .status-badge {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(15, 23, 42, 0.04);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 0.75rem 1rem;
@@ -557,7 +558,7 @@ header {
 }
 
 .predict-card {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(15, 23, 42, 0.02);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1rem 0.5rem;
@@ -567,7 +568,7 @@ header {
 
 .predict-card:hover {
     border-color: var(--primary);
-    background: rgba(0, 242, 254, 0.03);
+    background: rgba(0, 112, 243, 0.03);
     transform: translateY(-3px);
 }
 
@@ -632,11 +633,11 @@ header {
 
 .fancy-table td {
     padding: 0.9rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .fancy-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(15, 23, 42, 0.015);
 }
 
 .badge-type {
@@ -685,7 +686,7 @@ header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(15, 23, 42, 0.015);
     padding: 1rem;
     border-radius: 12px;
     border: 1px solid var(--border-color);
@@ -749,7 +750,7 @@ input:checked + .slider:before {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     overflow: hidden;
-    background: rgba(0,0,0,0.3);
+    background: var(--bg-panel-solid);
 }
 
 /* Canvas styling */
@@ -1005,9 +1006,9 @@ input:checked + .slider:before {
 }
 
 .modal-content {
-    background: #0f0f29;
-    border: 1px solid var(--primary);
-    box-shadow: 0 0 35px rgba(0, 242, 254, 0.25);
+    background: var(--bg-panel-solid);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
     border-radius: 16px;
     padding: 2rem;
     width: 90%;
@@ -1048,7 +1049,7 @@ input:checked + .slider:before {
 
 .form-input {
     width: 100%;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(15, 23, 42, 0.03);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 0.75rem;
@@ -1060,7 +1061,7 @@ input:checked + .slider:before {
 
 .form-input:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 8px rgba(0, 242, 254, 0.2);
+    box-shadow: 0 0 8px var(--primary-glow);
 }
 
 /* Calendar Event List */
@@ -1073,7 +1074,7 @@ input:checked + .slider:before {
 }
 
 .cal-item {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(15, 23, 42, 0.015);
     border: 1px solid var(--border-color);
     border-radius: 10px;
     padding: 0.85rem 1rem;

@@ -223,9 +223,9 @@ function updateDOM(state) {
     const posTableBrokerInfo = document.getElementById('posTableBrokerInfo');
     if (posTableBrokerInfo) {
         if (isConnected) {
-            posTableBrokerInfo.innerHTML = `Akun terhubung: <strong style="color:#fff;">${activeBroker.name}</strong> <span style="color:var(--text-muted); margin-left: 5px;">(ID: ${activeBroker.accountId})</span> • <span style="font-size:0.75rem; color:var(--success); border: 1px solid var(--success); padding: 1px 4px; border-radius: 4px; font-weight:bold; margin-left: 5px;">LIVE</span>`;
+            posTableBrokerInfo.innerHTML = `Akun terhubung: <strong style="color:var(--text-main);">${activeBroker.name}</strong> <span style="color:var(--text-muted); margin-left: 5px;">(ID: ${activeBroker.accountId})</span> • <span style="font-size:0.75rem; color:var(--success); border: 1px solid var(--success); padding: 1px 4px; border-radius: 4px; font-weight:bold; margin-left: 5px;">LIVE</span>`;
         } else {
-            posTableBrokerInfo.innerHTML = `Akun terhubung: <strong style="color:#fff;">Demo Sandbox</strong> <span style="color:var(--text-muted); margin-left: 5px;">(ID: DEMO-ACCOUNT)</span> • <span style="font-size:0.75rem; color:var(--primary); border: 1px solid var(--primary); padding: 1px 4px; border-radius: 4px; font-weight:bold; margin-left: 5px;">DEMO</span>`;
+            posTableBrokerInfo.innerHTML = `Akun terhubung: <strong style="color:var(--text-main);">${activeBroker.name ? activeBroker.name : 'Demo Sandbox'}</strong> <span style="color:var(--text-muted); margin-left: 5px;">(ID: DEMO-ACCOUNT)</span> • <span style="font-size:0.75rem; color:var(--primary); border: 1px solid var(--primary); padding: 1px 4px; border-radius: 4px; font-weight:bold; margin-left: 5px;">DEMO</span>`;
         }
     }
 
@@ -268,11 +268,11 @@ function updateDOM(state) {
         const subtextEl = realtimeBalEl.nextElementSibling;
         
         if (profit > 0) {
-            realtimeBalEl.style.color = '#00ff87';
+            realtimeBalEl.style.color = 'var(--success)';
             subtextEl.className = "balance-subtext profit";
             subtextEl.innerHTML = `▲ Floating: +${window.formatRupiah(profit)}`;
         } else if (profit < 0) {
-            realtimeBalEl.style.color = '#ff007f';
+            realtimeBalEl.style.color = 'var(--danger)';
             subtextEl.className = "balance-subtext loss";
             subtextEl.innerHTML = `▼ Floating: -${window.formatRupiah(Math.abs(profit))}`;
         } else {
@@ -561,9 +561,8 @@ function drawPerformanceGraph() {
     const width = rect.width;
     const height = 180;
 
-    // Clear Canvas
-    ctx.fillStyle = '#0a0a1a';
-    ctx.fillRect(0, 0, width, height);
+    // Clear Canvas to be transparent
+    ctx.clearRect(0, 0, width, height);
 
     // Calculate points from history balances
     const history = window.forexTradingEngine.tradeHistory;
@@ -588,7 +587,7 @@ function drawPerformanceGraph() {
     const getY = (val) => height - 30 - ((val - minVal) / range) * (height - 50);
 
     // Draw grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.05)';
     ctx.lineWidth = 1;
     for (let i = 0; i < 4; i++) {
         const y = 20 + i * (height - 50) / 3;
@@ -607,15 +606,15 @@ function drawPerformanceGraph() {
 
     // Style and stroke equity line
     const colorGrad = ctx.createLinearGradient(0, 0, width, 0);
-    colorGrad.addColorStop(0, '#00f2fe');
-    colorGrad.addColorStop(1, '#00ff87');
+    colorGrad.addColorStop(0, '#0070f3');
+    colorGrad.addColorStop(1, '#7928ca');
     
     ctx.strokeStyle = colorGrad;
     ctx.lineWidth = 3;
     
     ctx.save();
     ctx.shadowBlur = 8;
-    ctx.shadowColor = 'rgba(0, 242, 254, 0.3)';
+    ctx.shadowColor = 'rgba(0, 112, 243, 0.2)';
     ctx.stroke();
     ctx.restore();
 
@@ -625,8 +624,8 @@ function drawPerformanceGraph() {
     ctx.closePath();
     
     const fillGrad = ctx.createLinearGradient(0, 20, 0, height - 20);
-    fillGrad.addColorStop(0, 'rgba(0, 242, 254, 0.15)');
-    fillGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    fillGrad.addColorStop(0, 'rgba(0, 112, 243, 0.1)');
+    fillGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = fillGrad;
     ctx.fill();
 
@@ -638,7 +637,7 @@ function drawPerformanceGraph() {
         ctx.arc(cx, cy, 4, 0, Math.PI * 2);
         ctx.fillStyle = '#fff';
         ctx.fill();
-        ctx.strokeStyle = '#00f2fe';
+        ctx.strokeStyle = '#0070f3';
         ctx.lineWidth = 2;
         ctx.stroke();
     });
@@ -653,7 +652,7 @@ function drawPerformanceGraph() {
     };
 
     // Draw Y labels (Min, Max, Current)
-    ctx.fillStyle = '#8c9bb4';
+    ctx.fillStyle = '#475569';
     ctx.font = '9px Rajdhani';
     ctx.fillText(formatChartLabel(maxVal), width - 60, 20);
     ctx.fillText(formatChartLabel(minVal), width - 60, height - 30);
