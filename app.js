@@ -1254,15 +1254,15 @@ window.renderAssetsTab = function() {
         const isActive = symbol === activePair;
         let currentVal = cfg.startPrice;
         
-        // Define color palette based on asset for colorful custom names
+        // Define color palette based on asset (Alive Gray / Silver Metallic)
         const assetColors = {
-            'EUR/USD': '#00d2ff', // Vibrant Light Blue
-            'GBP/USD': '#e879f9', // Orchid Pink
-            'XAU/USD': '#ffd700', // Gold Yellow
-            'ETH/USD': '#a78bfa', // Lavender Violet
-            'BTC/USD': '#f97316'  // Bitcoin Orange
+            'EUR/USD': '#475569', // Cool Slate Gray
+            'GBP/USD': '#475569', // Cool Slate Gray
+            'XAU/USD': '#4b5563', // Platinum Silver
+            'ETH/USD': '#64748b', // Light Chrome Gray
+            'BTC/USD': '#334155'  // Deep Charcoal Gray
         };
-        const symbolColor = assetColors[symbol] || '#ffffff';
+        const symbolColor = assetColors[symbol] || '#64748b';
 
         if (isActive && window.forexChartEngine.pair === symbol) {
             currentVal = window.forexChartEngine.currentPrice;
