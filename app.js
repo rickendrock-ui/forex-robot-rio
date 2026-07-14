@@ -1403,30 +1403,87 @@ window.renderHistoryTab = function() {
     if (histLossTrades) histLossTrades.textContent = `${losses} (${total > 0 ? Math.round((losses / total) * 100) : 0}%)`;
     if (histProfitFactor) histProfitFactor.textContent = profitFactor;
 
-    // History Table body
+    // Render 1. Active Open Positions
+    const openTbody = document.getElementById('historyOpenTableBody');
+    if (openTbody) {
+        const positions = state.positions;
+        if (positions.length === 0) {
+            openTbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Tidak ada posisi aktif berjalan saat ini.</td></tr>`;
+        } else {
+            openTbody.innerHTML = positions.map(pos => {
+                const config = window.ASSET_CONFIGS ? (window.ASSET_CONFIGS[pos.pair] || window.ASSET_CONFIGS['EUR/USD']) : { decimals: 5 };
+                const dec = config.decimals;
+                
+                let livePrice = window.forexChartEngine.currentPrice;
+                if (window.forexChartEngine.pair !== pos.pair) {
+                    livePrice = config ? config.mockPrice || config.startPrice : 1.0;
+                }
+
+                const scale = config.pipScale || 0.0001;
+                let pipDiff = 0;
+                if (pos.type === 'BUY') {
+                    pipDiff = (livePrice - pos.entryPrice) / scale;
+                } else {
+                    pipDiff = (pos.entryPrice - livePrice) / scale;
+                }
+                const runningPnl = parseFloat((pipDiff * pos.size * state.pipValue).toFixed(2));
+                const isProfit = runningPnl >= 0;
+
+                const openTime = pos.openTime ? new Date(pos.openTime) : new Date();
+
+                return `
+                    <tr>
+                        <td class="log-time" style="white-space: nowrap;">
+                            ${openTime.toLocaleDateString('id-ID')} ${openTime.toLocaleTimeString('id-ID')}
+                        </td>
+                        <td><strong>${pos.pair}</strong></td>
+                        <td><span class="badge-type ${pos.type.toLowerCase()}">${pos.type}</span></td>
+                        <td class="tech-font">${pos.size.toFixed(2)} Lot</td>
+                        <td class="tech-font">${pos.entryPrice.toFixed(dec)}</td>
+                        <td class="tech-font">${livePrice.toFixed(dec)}</td>
+                        <td class="tech-font" style="color: ${isProfit ? 'var(--success)' : 'var(--danger)'}; font-weight: bold;">
+                            ${isProfit ? '+' : ''}${window.formatRupiah(runningPnl)}
+                        </td>
+                        <td>
+                            <button class="btn-close-position" onclick="window.forexTradingEngine.closePosition('${pos.id}', ${livePrice})">
+                                Close
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    }
+
+    // Render 2. Closed Trades History
     const tbody = document.getElementById('historyTableBody');
     if (tbody) {
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">Tidak ada riwayat transaksi yang cocok dengan kriteria filter.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">Tidak ada riwayat transaksi yang cocok dengan kriteria filter.</td></tr>`;
         } else {
-            // Sort by close time descending
             const sortedFiltered = [...filtered].sort((a, b) => new Date(b.closeTime) - new Date(a.closeTime));
             
             tbody.innerHTML = sortedFiltered.map(t => {
                 const config = window.ASSET_CONFIGS ? (window.ASSET_CONFIGS[t.pair] || window.ASSET_CONFIGS['EUR/USD']) : { decimals: 5 };
                 const dec = config.decimals;
                 const isProfit = t.pnl >= 0;
+
+                const openTime = t.openTime ? new Date(t.openTime) : new Date();
+                const closeTime = t.closeTime ? new Date(t.closeTime) : new Date();
                 
                 return `
                     <tr>
                         <td class="log-time" style="white-space: nowrap;">
-                            ${new Date(t.closeTime).toLocaleDateString('id-ID')} ${new Date(t.closeTime).toLocaleTimeString('id-ID')}
+                            ${openTime.toLocaleDateString('id-ID')} ${openTime.toLocaleTimeString('id-ID')}
+                        </td>
+                        <td class="log-time" style="white-space: nowrap;">
+                            ${closeTime.toLocaleDateString('id-ID')} ${closeTime.toLocaleTimeString('id-ID')}
                         </td>
                         <td><strong>${t.pair}</strong></td>
                         <td><span class="badge-type ${t.type.toLowerCase()}">${t.type}</span></td>
+                        <td class="tech-font">${t.size.toFixed(2)} Lot</td>
                         <td class="tech-font">${t.entryPrice.toFixed(dec)}</td>
                         <td class="tech-font">${t.closePrice.toFixed(dec)}</td>
-                        <td class="tech-font">${t.size.toFixed(2)} Lot</td>
                         <td class="tech-font" style="color: ${isProfit ? 'var(--success)' : 'var(--danger)'}; font-weight: bold;">
                             ${isProfit ? '+' : ''}${window.formatRupiah(t.pnl)}
                         </td>

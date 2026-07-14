@@ -553,7 +553,7 @@
                         <h3 class="glass-card-title" style="margin-bottom: 1.25rem;">
                             <span>
                                 <svg viewBox="0 0 24 24" style="fill: var(--primary); margin-right: 0.5rem;"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-                                Riwayat Transaksi (Profit & Loss)
+                                Monitoring & Riwayat Transaksi (Profit & Loss)
                             </span>
                         </h3>
                         
@@ -577,43 +577,77 @@
                             </div>
                         </div>
 
-                        <!-- Filters -->
-                        <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; align-items: center; background: rgba(15, 23, 42, 0.015); padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border-color);">
-                            <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Saring Berdasarkan:</span>
-                            <select id="histFilterAsset" class="form-input" style="width: auto; padding: 0.35rem 1.5rem; font-size: 0.8rem; margin: 0;">
-                                <option value="ALL">Semua Aset</option>
-                                <option value="EUR/USD">EUR/USD</option>
-                                <option value="GBP/USD">GBP/USD</option>
-                                <option value="XAU/USD">XAU/USD</option>
-                                <option value="ETH/USD">ETH/USD</option>
-                                <option value="BTC/USD">BTC/USD</option>
-                            </select>
-                            <select id="histFilterOutcome" class="form-input" style="width: auto; padding: 0.35rem 1.5rem; font-size: 0.8rem; margin: 0;">
-                                <option value="ALL">Semua Hasil</option>
-                                <option value="PROFIT">Hanya Profit</option>
-                                <option value="LOSS">Hanya Loss</option>
-                            </select>
+                        <!-- 1. ACTIVE OPEN POSITIONS -->
+                        <div style="margin-bottom: 2rem;">
+                            <h4 style="margin-bottom: 0.75rem; font-size: 1rem; color: var(--text-main); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                                <span class="status-dot active" style="width: 8px; height: 8px;"></span>
+                                Posisi Aktif Berjalan (Open Positions)
+                            </h4>
+                            <div class="pos-table-container">
+                                <table class="fancy-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Waktu Buka</th>
+                                            <th>Pasangan</th>
+                                            <th>Tipe</th>
+                                            <th>Lot Size</th>
+                                            <th>Harga Entry</th>
+                                            <th>Harga Live</th>
+                                            <th>Keuntungan/Kerugian Berjalan</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyOpenTableBody">
+                                        <!-- Dynamic open positions -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <!-- History Table -->
-                        <div class="pos-table-container">
-                            <table class="fancy-table">
-                                <thead>
-                                    <tr>
-                                        <th>Waktu Tutup</th>
-                                        <th>Pasangan</th>
-                                        <th>Tipe</th>
-                                        <th>Entry Price</th>
-                                        <th>Exit Price</th>
-                                        <th>Ukuran Lot</th>
-                                        <th>Net PnL</th>
-                                        <th>Alasan Keluar</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="historyTableBody">
-                                    <!-- Dynamic elements -->
-                                </tbody>
-                            </table>
+                        <!-- 2. CLOSED TRADES HISTORY -->
+                        <div>
+                            <h4 style="margin-bottom: 0.75rem; font-size: 1rem; color: var(--text-main); font-weight: 600;">
+                                Riwayat Transaksi Selesai (Closed Trades)
+                            </h4>
+                            
+                            <!-- Filters -->
+                            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center; background: rgba(15, 23, 42, 0.015); padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border-color);">
+                                <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Saring Berdasarkan:</span>
+                                <select id="histFilterAsset" class="form-input" style="width: auto; padding: 0.35rem 1.5rem; font-size: 0.8rem; margin: 0;">
+                                    <option value="ALL">Semua Aset</option>
+                                    <option value="EUR/USD">EUR/USD</option>
+                                    <option value="GBP/USD">GBP/USD</option>
+                                    <option value="XAU/USD">XAU/USD</option>
+                                    <option value="ETH/USD">ETH/USD</option>
+                                    <option value="BTC/USD">BTC/USD</option>
+                                </select>
+                                <select id="histFilterOutcome" class="form-input" style="width: auto; padding: 0.35rem 1.5rem; font-size: 0.8rem; margin: 0;">
+                                    <option value="ALL">Semua Hasil</option>
+                                    <option value="PROFIT">Hanya Profit</option>
+                                    <option value="LOSS">Hanya Loss</option>
+                                </select>
+                            </div>
+
+                            <div class="pos-table-container">
+                                <table class="fancy-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Waktu Buka</th>
+                                            <th>Waktu Tutup</th>
+                                            <th>Pasangan</th>
+                                            <th>Tipe</th>
+                                            <th>Lot Size</th>
+                                            <th>Harga Entry</th>
+                                            <th>Harga Exit</th>
+                                            <th>Keuntungan/Kerugian (PnL)</th>
+                                            <th>Keterangan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyTableBody">
+                                        <!-- Dynamic elements -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
