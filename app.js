@@ -133,6 +133,10 @@ function initNavigation() {
                 renderFormulas();
             } else if (targetId === 'broker-tab') {
                 renderBrokerView();
+            } else if (targetId === 'history-tab') {
+                window.renderHistoryTab();
+            } else if (targetId === 'finance-tab') {
+                window.renderFinanceTab();
             }
         });
     });
@@ -351,6 +355,10 @@ function updateDOM(state) {
 
     // Dynamic Summary calculations for dashboard indicators
     updateSummaryStats(state);
+    
+    // Auto-update history and finance tabs if present
+    if (document.getElementById('history-tab')) window.renderHistoryTab();
+    if (document.getElementById('finance-tab')) window.renderFinanceTab();
 }
 
 function updateSummaryStats(state) {
@@ -1144,6 +1152,16 @@ function setupFormListeners() {
             }
         };
     }
+
+    // Trade History Filters
+    const histFilterAsset = document.getElementById('histFilterAsset');
+    const histFilterOutcome = document.getElementById('histFilterOutcome');
+    if (histFilterAsset) {
+        histFilterAsset.onchange = () => window.renderHistoryTab();
+    }
+    if (histFilterOutcome) {
+        histFilterOutcome.onchange = () => window.renderHistoryTab();
+    }
 }
 
 // 11. Custom logs adding animation
@@ -1347,5 +1365,193 @@ window.closeAllPositionsForAsset = function(symbol) {
             }
         }
         window.renderAssetsTab();
+    }
+};
+
+// 12. Trade History Tab Rendering
+window.renderHistoryTab = function() {
+    const state = window.forexTradingEngine;
+    const history = state.tradeHistory;
+
+    // Filters
+    const assetFilter = document.getElementById('histFilterAsset') ? document.getElementById('histFilterAsset').value : 'ALL';
+    const outcomeFilter = document.getElementById('histFilterOutcome') ? document.getElementById('histFilterOutcome').value : 'ALL';
+
+    const filtered = history.filter(t => {
+        const matchesAsset = assetFilter === 'ALL' || t.pair === assetFilter;
+        const matchesOutcome = outcomeFilter === 'ALL' || 
+            (outcomeFilter === 'PROFIT' && t.pnl >= 0) || 
+            (outcomeFilter === 'LOSS' && t.pnl < 0);
+        return matchesAsset && matchesOutcome;
+    });
+
+    // Overall stats (unfiltered history metrics)
+    const histTotalTrades = document.getElementById('histTotalTrades');
+    const histWinTrades = document.getElementById('histWinTrades');
+    const histLossTrades = document.getElementById('histLossTrades');
+    const histProfitFactor = document.getElementById('histProfitFactor');
+
+    const total = history.length;
+    const wins = history.filter(t => t.pnl >= 0).length;
+    const losses = history.filter(t => t.pnl < 0).length;
+    const totalProfit = history.filter(t => t.pnl >= 0).reduce((sum, t) => sum + t.pnl, 0);
+    const totalLoss = Math.abs(history.filter(t => t.pnl < 0).reduce((sum, t) => sum + t.pnl, 0));
+    const profitFactor = totalLoss > 0 ? (totalProfit / totalLoss).toFixed(2) : (totalProfit > 0 ? 'Max' : '0.00');
+
+    if (histTotalTrades) histTotalTrades.textContent = total;
+    if (histWinTrades) histWinTrades.textContent = `${wins} (${total > 0 ? Math.round((wins / total) * 100) : 0}%)`;
+    if (histLossTrades) histLossTrades.textContent = `${losses} (${total > 0 ? Math.round((losses / total) * 100) : 0}%)`;
+    if (histProfitFactor) histProfitFactor.textContent = profitFactor;
+
+    // History Table body
+    const tbody = document.getElementById('historyTableBody');
+    if (tbody) {
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">Tidak ada riwayat transaksi yang cocok dengan kriteria filter.</td></tr>`;
+        } else {
+            // Sort by close time descending
+            const sortedFiltered = [...filtered].sort((a, b) => new Date(b.closeTime) - new Date(a.closeTime));
+            
+            tbody.innerHTML = sortedFiltered.map(t => {
+                const config = window.ASSET_CONFIGS ? (window.ASSET_CONFIGS[t.pair] || window.ASSET_CONFIGS['EUR/USD']) : { decimals: 5 };
+                const dec = config.decimals;
+                const isProfit = t.pnl >= 0;
+                
+                return `
+                    <tr>
+                        <td class="log-time" style="white-space: nowrap;">
+                            ${new Date(t.closeTime).toLocaleDateString('id-ID')} ${new Date(t.closeTime).toLocaleTimeString('id-ID')}
+                        </td>
+                        <td><strong>${t.pair}</strong></td>
+                        <td><span class="badge-type ${t.type.toLowerCase()}">${t.type}</span></td>
+                        <td class="tech-font">${t.entryPrice.toFixed(dec)}</td>
+                        <td class="tech-font">${t.closePrice.toFixed(dec)}</td>
+                        <td class="tech-font">${t.size.toFixed(2)} Lot</td>
+                        <td class="tech-font" style="color: ${isProfit ? 'var(--success)' : 'var(--danger)'}; font-weight: bold;">
+                            ${isProfit ? '+' : ''}${window.formatRupiah(t.pnl)}
+                        </td>
+                        <td style="font-size: 0.8rem; color: var(--text-muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${t.exitReason}">
+                            ${t.exitReason}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    }
+};
+
+// 13. Financial Report Tab Rendering
+window.renderFinanceTab = function() {
+    const state = window.forexTradingEngine;
+    
+    // Bind elements
+    const finRealtimeBalance = document.getElementById('finRealtimeBalance');
+    const finInitialBalance = document.getElementById('finInitialBalance');
+    const finNetProfit = document.getElementById('finNetProfit');
+    const finGrowthPercent = document.getElementById('finGrowthPercent');
+    const financeLogsList = document.getElementById('financeLogsList');
+
+    if (finRealtimeBalance) finRealtimeBalance.textContent = window.formatRupiah(state.realtimeBalance);
+    if (finInitialBalance) finInitialBalance.textContent = window.formatRupiah(state.initialBalance);
+    
+    const netProfit = state.realtimeBalance - state.initialBalance;
+    if (finNetProfit) {
+        finNetProfit.textContent = `${netProfit >= 0 ? '+' : ''}${window.formatRupiah(netProfit)}`;
+        finNetProfit.style.color = netProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+    
+    if (finGrowthPercent) {
+        const growth = state.initialBalance > 0 ? ((netProfit / state.initialBalance) * 100) : 0;
+        finGrowthPercent.textContent = `${growth >= 0 ? '+' : ''}${growth.toFixed(2)}%`;
+        finGrowthPercent.style.color = growth >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+
+    if (financeLogsList) {
+        // Compile cash flows chronologically
+        const cashFlows = [];
+
+        // 1. Add all closed trades
+        state.tradeHistory.forEach(trade => {
+            cashFlows.push({
+                time: trade.closeTime ? new Date(trade.closeTime) : new Date(),
+                type: trade.pnl >= 0 ? 'PROFIT_TRADING' : 'LOSS_TRADING',
+                amount: trade.pnl,
+                title: `Hasil Trading ${trade.pair} (${trade.type})`,
+                desc: `Order ditutup karena ${trade.exitReason || 'Manual'}. Entry: ${trade.entryPrice.toFixed(4)} | Exit: ${trade.closePrice.toFixed(4)}`
+            });
+        });
+
+        // 2. Add deposit/top-up actions from tradeLogs
+        state.tradeLogs.forEach(log => {
+            if (log.action.includes('DEPOSIT') || log.action.includes('TOP-UP') || log.action.includes('RESET') || log.action.includes('BROKER TERHUBUNG')) {
+                let amount = 0;
+                const match = log.reason.match(/Rp\s*([0-9.,]+)/);
+                if (match) {
+                    amount = parseFloat(match[1].replace(/\./g, '').replace(/,/g, '.'));
+                }
+                
+                let flowType = 'RESET_SALDO';
+                if (log.action.includes('DEPOSIT') || log.action.includes('TOP-UP')) {
+                    flowType = 'DEPOSIT_MASUK';
+                } else if (log.action.includes('TERHUBUNG')) {
+                    flowType = 'SINKRON_SALDO';
+                }
+
+                cashFlows.push({
+                    time: log.time ? new Date(log.time) : new Date(),
+                    type: flowType,
+                    amount: amount || 0,
+                    title: log.action,
+                    desc: log.reason
+                });
+            }
+        });
+
+        // Sort by time descending
+        cashFlows.sort((a, b) => b.time - a.time);
+
+        if (cashFlows.length === 0) {
+            financeLogsList.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 2rem;">Belum ada aktivitas aliran dana masuk/keluar.</p>`;
+        } else {
+            financeLogsList.innerHTML = cashFlows.map(cf => {
+                let badgeClass = 'neutral';
+                let amountStr = '';
+                
+                if (cf.type === 'PROFIT_TRADING') {
+                    badgeClass = 'buy';
+                    amountStr = `+${window.formatRupiah(cf.amount)}`;
+                } else if (cf.type === 'LOSS_TRADING') {
+                    badgeClass = 'sell';
+                    amountStr = `-${window.formatRupiah(Math.abs(cf.amount))}`;
+                } else if (cf.type === 'DEPOSIT_MASUK') {
+                    badgeClass = 'buy';
+                    amountStr = cf.amount > 0 ? `+${window.formatRupiah(cf.amount)}` : 'Top-Up Dana';
+                } else if (cf.type === 'SINKRON_SALDO') {
+                    badgeClass = 'neutral';
+                    amountStr = cf.amount > 0 ? `Sync: ${window.formatRupiah(cf.amount)}` : 'Sinkron';
+                } else {
+                    badgeClass = 'neutral';
+                    amountStr = 'Penyesuaian';
+                }
+
+                const displayName = cf.type.replace('_', ' ');
+
+                return `
+                    <div class="log-item" style="margin-bottom: 0.75rem;">
+                        <div class="log-item-header">
+                            <span class="badge-type ${badgeClass}" style="padding: 0.15rem 0.5rem; font-size: 0.7rem;">
+                                ${displayName}
+                            </span>
+                            <strong style="color: ${cf.type.includes('PROFIT') || cf.type.includes('DEPOSIT') ? 'var(--success)' : (cf.type.includes('LOSS') ? 'var(--danger)' : 'var(--text-main)')}; font-family: var(--font-tech); font-size: 1rem;">
+                                ${amountStr}
+                            </strong>
+                            <span class="log-time">${cf.time.toLocaleDateString('id-ID')} ${cf.time.toLocaleTimeString('id-ID')}</span>
+                        </div>
+                        <div style="margin-top: 0.4rem; font-size: 0.85rem; font-weight: 500; color: var(--text-main);">${cf.title}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; line-height: 1.4;">${cf.desc}</div>
+                    </div>
+                `;
+            }).join('');
+        }
     }
 };

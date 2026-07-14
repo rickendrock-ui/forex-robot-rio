@@ -11,13 +11,13 @@ class BrokerEngine {
         // Mock data saldo & riwayat rill akun broker
         this.brokerBalances = {
             exness: {
-                initialBalance: 1000000.00,
+                initialBalance: 940600.00,
                 balance: 1000000.00,
                 realtimeBalance: 1000000.00,
                 finalBalance: 1000000.00,
                 tradeHistory: [
-                    { pair: 'XAU/USD', type: 'BUY', entryPrice: 2345.10, closePrice: 2351.40, size: 0.5, pnl: 4500000.00, openTime: new Date(Date.now() - 3600000), closeTime: new Date(Date.now() - 3300000), exitReason: 'TAKE PROFIT DIKENAI' },
-                    { pair: 'EUR/USD', type: 'SELL', entryPrice: 1.0910, closePrice: 1.0902, size: 1.2, pnl: 1440000.00, openTime: new Date(Date.now() - 7200000), closeTime: new Date(Date.now() - 6900000), exitReason: 'CLOSE MANUAL' }
+                    { pair: 'XAU/USD', type: 'BUY', entryPrice: 2345.10, closePrice: 2351.40, size: 0.05, pnl: 45000.00, openTime: new Date(Date.now() - 3600000), closeTime: new Date(Date.now() - 3300000), exitReason: 'TAKE PROFIT DIKENAI' },
+                    { pair: 'EUR/USD', type: 'SELL', entryPrice: 1.0910, closePrice: 1.0902, size: 0.12, pnl: 14400.00, openTime: new Date(Date.now() - 7200000), closeTime: new Date(Date.now() - 6900000), exitReason: 'CLOSE MANUAL' }
                 ],
                 tradeLogs: [
                     { action: 'KONEKSI EXNESS', time: new Date(Date.now() - 7200000), reason: 'Sesi akun Exness berhasil diverifikasi.' },
@@ -75,6 +75,10 @@ class BrokerEngine {
             this.brokerBalances[brokerId].balance = parsedBal;
             this.brokerBalances[brokerId].realtimeBalance = parsedBal;
             this.brokerBalances[brokerId].finalBalance = parsedBal;
+            this.brokerBalances[brokerId].tradeHistory = []; // Kosongkan riwayat dummy saat menggunakan akun kustom rill
+            this.brokerBalances[brokerId].tradeLogs = [
+                { action: `KONEKSI ${brokerId.toUpperCase()}`, time: new Date(), reason: `Sesi akun ${broker.name} berhasil diverifikasi dengan saldo Rp ${parsedBal.toLocaleString('id-ID')}.` }
+            ];
             broker.balance = parsedBal;
         } else {
             broker.balance = this.brokerBalances[brokerId]?.balance || 1000000.00;

@@ -60,6 +60,18 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" data-target="history-tab">
+                        <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                        Riwayat Transaksi
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-target="finance-tab">
+                        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H7v-7h3v7zm4 0h-3V7h3v10zm4 0h-3v-4h3v4z"/></svg>
+                        Laporan Keuangan
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" data-target="formulas-tab">
                         <svg viewBox="0 0 24 24"><path d="M19.36 10.04L20.5 9l-1.41-1.41-1.15 1.15C16.28 7.66 14.25 7 12 7c-5.25 0-9.5 4.25-9.5 9.5S6.75 26 12 26s9.5-4.25 9.5-9.5c0-2.25-.66-4.28-1.74-5.96zM12 24c-4.14 0-7.5-3.36-7.5-7.5S7.86 9 12 9s7.5 3.36 7.5 7.5-3.36 7.5-7.5 7.5zm.5-13h-1v5h3v-1h-2v-4z"/></svg>
                         Rumus Trading
@@ -531,6 +543,117 @@
 [SYSTEM] Terminal diinisialisasi. Menunggu sinyal trading...
 [SYSTEM] Server MetaAPI Gateway: Terhubung pada https://api.metaapi.cloud (Simulated Gateway)
 [SYSTEM] Silakan buka posisi manual atau hubungkan broker untuk memulai logging.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. RIWAYAT TRANSAKSI VIEW -->
+                <div id="history-tab" class="viewport-panel">
+                    <div class="glass-card" style="padding: 1.5rem;">
+                        <h3 class="glass-card-title" style="margin-bottom: 1.25rem;">
+                            <span>
+                                <svg viewBox="0 0 24 24" style="fill: var(--primary); margin-right: 0.5rem;"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                                Riwayat Transaksi (Profit & Loss)
+                            </span>
+                        </h3>
+                        
+                        <!-- Mini Stats Bar -->
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; text-align: center;">
+                            <div style="background: rgba(15, 23, 42, 0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 0.25rem;">Total Selesai</div>
+                                <strong id="histTotalTrades" class="tech-font" style="font-size: 1.4rem;">0</strong>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 0.25rem;">Transaksi Untung</div>
+                                <strong id="histWinTrades" class="tech-font" style="font-size: 1.4rem; color: var(--success);">0</strong>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 0.25rem;">Transaksi Rugi</div>
+                                <strong id="histLossTrades" class="tech-font" style="font-size: 1.4rem; color: var(--danger);">0</strong>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 0.25rem;">Profit Factor</div>
+                                <strong id="histProfitFactor" class="tech-font" style="font-size: 1.4rem; color: var(--primary);">0.00</strong>
+                            </div>
+                        </div>
+
+                        <!-- Filters -->
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; align-items: center; background: rgba(15, 23, 42, 0.015); padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid var(--border-color);">
+                            <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">Saring Berdasarkan:</span>
+                            <select id="histFilterAsset" class="form-input" style="width: auto; padding: 0.35rem 1.5rem; font-size: 0.8rem; margin: 0;">
+                                <option value="ALL">Semua Aset</option>
+                                <option value="EUR/USD">EUR/USD</option>
+                                <option value="GBP/USD">GBP/USD</option>
+                                <option value="XAU/USD">XAU/USD</option>
+                                <option value="ETH/USD">ETH/USD</option>
+                                <option value="BTC/USD">BTC/USD</option>
+                            </select>
+                            <select id="histFilterOutcome" class="form-input" style="width: auto; padding: 0.35rem 1.5rem; font-size: 0.8rem; margin: 0;">
+                                <option value="ALL">Semua Hasil</option>
+                                <option value="PROFIT">Hanya Profit</option>
+                                <option value="LOSS">Hanya Loss</option>
+                            </select>
+                        </div>
+
+                        <!-- History Table -->
+                        <div class="pos-table-container">
+                            <table class="fancy-table">
+                                <thead>
+                                    <tr>
+                                        <th>Waktu Tutup</th>
+                                        <th>Pasangan</th>
+                                        <th>Tipe</th>
+                                        <th>Entry Price</th>
+                                        <th>Exit Price</th>
+                                        <th>Ukuran Lot</th>
+                                        <th>Net PnL</th>
+                                        <th>Alasan Keluar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody">
+                                    <!-- Dynamic elements -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. LAPORAN KEUANGAN VIEW -->
+                <div id="finance-tab" class="viewport-panel">
+                    <div class="glass-card" style="padding: 1.5rem;">
+                        <h3 class="glass-card-title" style="margin-bottom: 1.25rem;">
+                            <span>
+                                <svg viewBox="0 0 24 24" style="fill: var(--primary); margin-right: 0.5rem;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H7v-7h3v7zm4 0h-3V7h3v10zm4 0h-3v-4h3v4z"/></svg>
+                                Laporan Ringkasan Keuangan Akun
+                            </span>
+                        </h3>
+
+                        <!-- Financial Summary Cards -->
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; text-align: center;">
+                            <div style="background: rgba(15, 23, 42, 0.02); padding: 1.25rem 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 0.35rem;">Saldo Berjalan (Equity)</div>
+                                <strong id="finRealtimeBalance" class="tech-font" style="font-size: 1.3rem; color: var(--primary);">Rp 0,00</strong>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.02); padding: 1.25rem 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 0.35rem;">Saldo Awal (Deposit)</div>
+                                <strong id="finInitialBalance" class="tech-font" style="font-size: 1.3rem;">Rp 0,00</strong>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.02); padding: 1.25rem 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 0.35rem;">Keuntungan Bersih (Net)</div>
+                                <strong id="finNetProfit" class="tech-font" style="font-size: 1.3rem; color: var(--success);">Rp 0,00</strong>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.02); padding: 1.25rem 1rem; border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom: 0.35rem;">Pertumbuhan Saldo (%)</div>
+                                <strong id="finGrowthPercent" class="tech-font" style="font-size: 1.3rem;">0.00%</strong>
+                            </div>
+                        </div>
+
+                        <!-- Financial Logs List -->
+                        <div style="margin-top: 1.5rem;">
+                            <h4 style="margin-bottom: 0.75rem; font-size: 0.95rem; color: var(--text-main); font-weight: 600;">Log Arus Kas & Transaksi Finansial</h4>
+                            <div class="news-feed-list" id="financeLogsList" style="max-height: 380px;">
+                                <!-- Dynamic logs list -->
+                            </div>
                         </div>
                     </div>
                 </div>
