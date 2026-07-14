@@ -206,31 +206,31 @@ class ForexChartEngine {
         
         const themes = {
             exness: {
-                bg: '#0d0d0d',
-                bullish: '#ffc107', // Gold Exness
-                bearish: '#ff5722', // Orange-red
-                ema: '#ffe135',
+                bg: '#fdfbfa',
+                bullish: '#d97706', // Gold Exness (Slate Amber)
+                bearish: '#dc2626', // Red
+                ema: '#d97706',
                 hudLabel: 'EXNESS LIVE FEED'
             },
             mifx: {
-                bg: '#0a101f',
-                bullish: '#00d2ff', // Cyan-blue MIFX
-                bearish: '#f43f5e', // Rose
-                ema: '#00f5d4',
+                bg: '#f0f5fc',
+                bullish: '#0284c7', // Cyan-blue MIFX
+                bearish: '#be185d', // Rose
+                ema: '#0891b2',
                 hudLabel: 'MIFX REAL FEED'
             },
             ajaib: {
-                bg: '#041611',
-                bullish: '#10b981', // Emerald Ajaib
-                bearish: '#f97316', // Orange
-                ema: '#34d399',
+                bg: '#f3faf7',
+                bullish: '#059669', // Emerald Ajaib
+                bearish: '#ea580c', // Orange
+                ema: '#10b981',
                 hudLabel: 'AJAIB PREMIUM FEED'
             },
             demo: {
-                bg: '#070712',
-                bullish: '#00ff87',
-                bearish: '#ff007f',
-                ema: '#00f2fe',
+                bg: '#ffffff',
+                bullish: '#2563eb', // Electric Blue
+                bearish: '#db2777', // Rose/Pink
+                ema: '#0ea5e9',
                 hudLabel: 'DEMO SANDBOX FEED'
             }
         };
@@ -251,7 +251,7 @@ class ForexChartEngine {
 
     drawGrid(width, mainHeight, rsiTop, rsiHeight) {
         const ctx = this.ctx;
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.05)';
         ctx.lineWidth = 1;
         
         // Vertical grid lines
@@ -280,7 +280,7 @@ class ForexChartEngine {
         }
 
         // Horizontal grid lines - RSI Chart (Overbought 70, Middle 50, Oversold 30)
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.06)';
         const rsiLines = [30, 50, 70];
         rsiLines.forEach(val => {
             const y = rsiTop + rsiHeight * (1 - val / 100);
@@ -288,12 +288,12 @@ class ForexChartEngine {
             ctx.moveTo(this.paddingLeft, y);
             ctx.lineTo(width - this.paddingRight, y);
             ctx.setLineDash(val !== 50 ? [4, 4] : []);
-            ctx.strokeStyle = val !== 50 ? 'rgba(216, 0, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)';
+            ctx.strokeStyle = val !== 50 ? 'rgba(121, 40, 202, 0.12)' : 'rgba(15, 23, 42, 0.04)';
             ctx.stroke();
             ctx.setLineDash([]);
             
             // Labels
-            ctx.fillStyle = '#8c9bb4';
+            ctx.fillStyle = '#475569';
             ctx.font = '9px Rajdhani';
             ctx.fillText(val, width - this.paddingRight + 5, y + 3);
         });
@@ -387,7 +387,7 @@ class ForexChartEngine {
         ctx.restore();
 
         // Draw Y Axis Labels (Prices)
-        ctx.fillStyle = '#8c9bb4';
+        ctx.fillStyle = '#475569';
         ctx.font = '10px Rajdhani';
         ctx.textAlign = 'left';
         
@@ -415,7 +415,7 @@ class ForexChartEngine {
         // Current Price Label Badge
         ctx.fillStyle = color;
         ctx.fillRect(width - this.paddingRight, currentY - 8, this.paddingRight, 16);
-        ctx.fillStyle = theme.bg || '#070712';
+        ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 10px Rajdhani';
         ctx.fillText(this.currentPrice.toFixed(this.getDecimals()), width - this.paddingRight + 4, currentY + 4);
     }
@@ -453,7 +453,7 @@ class ForexChartEngine {
         ctx.restore();
 
         // Label indicator
-        ctx.fillStyle = '#d800ff';
+        ctx.fillStyle = '#7928ca';
         ctx.font = '10px Outfit';
         ctx.fillText(`RSI (14): ${this.rsi[this.rsi.length - 1]?.toFixed(2) || '50.00'}`, this.paddingLeft + 5, rsiTop - 6);
     }
@@ -461,7 +461,7 @@ class ForexChartEngine {
     drawHUD(width, height, theme = { ema: '#00f2fe', hudLabel: 'DEMO SANDBOX FEED' }) {
         // Draw HUD details: Pair Name, timeframe, etc.
         const ctx = this.ctx;
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = '#0f172a';
         ctx.font = 'bold 14px Rajdhani';
         ctx.fillText(`${this.pair} • ${theme.hudLabel}`, this.paddingLeft, this.paddingTop - 12);
         

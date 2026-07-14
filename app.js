@@ -1008,6 +1008,25 @@ function setupFormListeners() {
         };
     }
 
+    // Reset Assets prices and active pair to default
+    const btnResetAssets = document.getElementById('btnResetAssets');
+    if (btnResetAssets) {
+        btnResetAssets.onclick = () => {
+            if (confirm("Apakah Anda yakin ingin mengatur ulang semua harga instrumen dan kembali ke EUR/USD?")) {
+                const configs = window.ASSET_CONFIGS;
+                if (configs) {
+                    Object.entries(configs).forEach(([symbol, cfg]) => {
+                        cfg.mockPrice = cfg.startPrice;
+                    });
+                }
+                
+                // Switch back to EUR/USD
+                window.activateAssetFromTab('EUR/USD');
+                alert("Seluruh instrumen aset telah diatur ulang ke harga awal.");
+            }
+        };
+    }
+
     // Asset Selector binding & initialization
     const assetSel = document.getElementById('assetSelector');
     const predictAssetLbl = document.getElementById('predictAssetLabel');
