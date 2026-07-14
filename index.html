@@ -137,8 +137,17 @@
                         </div>
                     </div>
 
+                    <!-- Broker Balance Placeholder -->
+                    <div id="brokerBalancePlaceholder" class="glass-card" style="padding: 2.5rem; text-align: center; margin-bottom: 1.25rem; display: none; border: 1px solid rgba(255, 255, 255, 0.05); background: rgba(255, 255, 255, 0.01);">
+                        <svg viewBox="0 0 24 24" style="width: 42px; height: 42px; fill: var(--text-muted); margin-bottom: 0.75rem; opacity: 0.7;"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2-.9-2-2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                        <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 0.4rem; font-family: var(--font-tech); text-transform: uppercase; letter-spacing: 0.5px;">Saldo Disembunyikan</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; max-width: 440px; margin: 0 auto; line-height: 1.4;">
+                            Tautkan akun broker rill Anda terlebih dahulu di menu <strong>Koneksi Broker</strong> untuk memuat saldo aktif dan grafik pertumbuhan equity.
+                        </p>
+                    </div>
+
                     <!-- Balance Metric Row -->
-                    <div class="balance-widget-grid">
+                    <div class="balance-widget-grid" id="balanceWidgetGrid">
                         <div class="balance-card initial-bal">
                             <span class="balance-label">Saldo Awal</span>
                             <span class="balance-val" id="initialBalance">Rp 150.000.000,00</span>
@@ -208,6 +217,9 @@
                                     Posisi Trading Aktif
                                 </span>
                             </h3>
+                            <div id="posTableBrokerInfo" style="font-size: 0.8rem; color: var(--text-muted); padding: 0 0.5rem 0.75rem 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <!-- Broker info dynamically injected -->
+                            </div>
                             <div class="pos-table-container">
                                 <table class="fancy-table">
                                     <thead>

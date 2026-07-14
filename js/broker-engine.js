@@ -11,10 +11,10 @@ class BrokerEngine {
         // Mock data saldo & riwayat rill akun broker
         this.brokerBalances = {
             exness: {
-                initialBalance: 250000000.00,
-                balance: 250000000.00,
-                realtimeBalance: 250000000.00,
-                finalBalance: 250000000.00,
+                initialBalance: 1000000.00,
+                balance: 1000000.00,
+                realtimeBalance: 1000000.00,
+                finalBalance: 1000000.00,
                 tradeHistory: [
                     { pair: 'XAU/USD', type: 'BUY', entryPrice: 2345.10, closePrice: 2351.40, size: 0.5, pnl: 4500000.00, openTime: new Date(Date.now() - 3600000), closeTime: new Date(Date.now() - 3300000), exitReason: 'TAKE PROFIT DIKENAI' },
                     { pair: 'EUR/USD', type: 'SELL', entryPrice: 1.0910, closePrice: 1.0902, size: 1.2, pnl: 1440000.00, openTime: new Date(Date.now() - 7200000), closeTime: new Date(Date.now() - 6900000), exitReason: 'CLOSE MANUAL' }
@@ -59,13 +59,25 @@ class BrokerEngine {
         this.loadState();
     }
 
-    connectBroker(brokerId, accountId, server) {
+    connectBroker(brokerId, accountId, server, customBalance = null) {
         const broker = this.brokers.find(b => b.id === brokerId);
         if (!broker) return false;
 
         broker.connected = true;
         broker.accountId = accountId;
         broker.server = server;
+        
+        // Simpan saldo kustom jika dimasukkan oleh pengguna
+        if (customBalance !== null && this.brokerBalances[brokerId]) {
+            const parsedBal = parseFloat(customBalance);
+            this.brokerBalances[brokerId].initialBalance = parsedBal;
+            this.brokerBalances[brokerId].balance = parsedBal;
+            this.brokerBalances[brokerId].realtimeBalance = parsedBal;
+            this.brokerBalances[brokerId].finalBalance = parsedBal;
+            broker.balance = parsedBal;
+        } else {
+            broker.balance = this.brokerBalances[brokerId]?.balance || 1000000.00;
+        }
         
         // Sinkronisasi saldo & riwayat ke Trading Engine utama
         if (window.forexTradingEngine && this.brokerBalances[brokerId]) {
@@ -174,6 +186,16 @@ class BrokerEngine {
                 this.brokers = state.brokers ?? this.brokers;
                 this.activeBrokerId = state.activeBrokerId ?? 'exness';
                 this.isAutoTradingOnBroker = state.isAutoTradingOnBroker ?? false;
+                
+                // Selaraskan database brokerBalances dengan data yang di-load
+                this.brokers.forEach(b => {
+                    if (b.connected && b.balance !== undefined && this.brokerBalances[b.id]) {
+                        this.brokerBalances[b.id].initialBalance = b.balance;
+                        this.brokerBalances[b.id].balance = b.balance;
+                        this.brokerBalances[b.id].realtimeBalance = b.balance;
+                        this.brokerBalances[b.id].finalBalance = b.balance;
+                    }
+                });
             } catch (e) {
                 console.error("Failed to load broker state", e);
             }

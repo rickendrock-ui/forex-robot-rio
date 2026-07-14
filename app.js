@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeBroker = window.brokerEngine.getActiveBroker();
         if (activeBroker && activeBroker.connected) {
             const data = window.brokerEngine.brokerBalances[activeBroker.id];
-            if (data && (window.forexTradingEngine.tradeHistory.length !== data.tradeHistory.length || window.forexTradingEngine.balance === 150000000.00 || window.forexTradingEngine.balance === 10000.00)) {
+            if (data) {
                 window.forexTradingEngine.initialBalance = data.initialBalance;
                 window.forexTradingEngine.balance = data.balance;
                 window.forexTradingEngine.realtimeBalance = data.realtimeBalance;
@@ -168,6 +168,32 @@ function startSimulationLoops() {
 
 // 4. Update UI Components (Dynamic DOM manipulation)
 function updateDOM(state) {
+    const activeBroker = window.brokerEngine ? window.brokerEngine.getActiveBroker() : null;
+    const isConnected = activeBroker && activeBroker.connected;
+
+    // Sembunyikan/Tampilkan saldo berdasarkan koneksi broker
+    const balanceGrid = document.getElementById('balanceWidgetGrid');
+    const balancePlaceholder = document.getElementById('brokerBalancePlaceholder');
+    if (balanceGrid && balancePlaceholder) {
+        if (isConnected) {
+            balanceGrid.style.display = 'grid';
+            balancePlaceholder.style.display = 'none';
+        } else {
+            balanceGrid.style.display = 'none';
+            balancePlaceholder.style.display = 'block';
+        }
+    }
+
+    // Update Broker HUD di atas Transaksi Aktif
+    const posTableBrokerInfo = document.getElementById('posTableBrokerInfo');
+    if (posTableBrokerInfo) {
+        if (isConnected) {
+            posTableBrokerInfo.innerHTML = `Akun terhubung: <strong style="color:#fff;">${activeBroker.name}</strong> <span style="color:var(--text-muted); margin-left: 5px;">(ID: ${activeBroker.accountId})</span> • <span style="font-size:0.75rem; color:var(--success); border: 1px solid var(--success); padding: 1px 4px; border-radius: 4px; font-weight:bold; margin-left: 5px;">LIVE</span>`;
+        } else {
+            posTableBrokerInfo.innerHTML = `Akun terhubung: <strong style="color:#fff;">Demo Sandbox</strong> <span style="color:var(--text-muted); margin-left: 5px;">(ID: DEMO-ACCOUNT)</span> • <span style="font-size:0.75rem; color:var(--primary); border: 1px solid var(--primary); padding: 1px 4px; border-radius: 4px; font-weight:bold; margin-left: 5px;">DEMO</span>`;
+        }
+    }
+
     // Update Broker HUD Status di Dashboard
     const dashBrokerDot = document.getElementById('dashBrokerStatusDot');
     const dashBrokerText = document.getElementById('dashBrokerStatusText');
@@ -175,9 +201,6 @@ function updateDOM(state) {
     const btnDashCloseAll = document.getElementById('btnDashCloseAll');
 
     if (dashBrokerDot && dashBrokerText && dashActiveAsset) {
-        const activeBroker = window.brokerEngine ? window.brokerEngine.getActiveBroker() : null;
-        const isConnected = activeBroker && activeBroker.connected;
-        
         if (isConnected) {
             dashBrokerDot.classList.add('active');
             dashBrokerText.innerHTML = `${activeBroker.name} <span style="color:var(--text-muted); font-size:0.8rem;">(Rek: ${activeBroker.accountId})</span> <span style="font-size:0.75rem; color:var(--success); border: 1px solid var(--success); padding: 1px 4px; border-radius: 4px; margin-left: 5px;">LIVE</span>`;
@@ -848,6 +871,10 @@ function renderBrokerView() {
                     <label>Server Trading</label>
                     <input type="text" id="brokerServer" class="form-input" required placeholder="Contoh: Exness-Real15">
                 </div>
+                <div class="form-group">
+                    <label>Saldo Akun Riil (Rp)</label>
+                    <input type="number" id="brokerBalanceInput" class="form-input" required value="1000000" min="0" step="100000">
+                </div>
                 <button type="submit" class="btn-primary" style="width: 100%;">Tautkan Akun Sekarang</button>
             </form>
         `;
@@ -861,8 +888,10 @@ window.connectActiveBroker = function(e) {
     e.preventDefault();
     const acc = document.getElementById('brokerAccId').value;
     const srv = document.getElementById('brokerServer').value;
+    const balInput = document.getElementById('brokerBalanceInput');
+    const balanceVal = balInput ? parseFloat(balInput.value) : 1000000.00;
     
-    window.brokerEngine.connectBroker(selectedBrokerId, acc, srv);
+    window.brokerEngine.connectBroker(selectedBrokerId, acc, srv, balanceVal);
     renderBrokerView();
 };
 
@@ -1201,6 +1230,7 @@ window.activateAssetFromTab = function(symbol) {
     if (assetSel) assetSel.value = symbol;
 
     window.forexTradingEngine.saveState();
+    window.forexTradingEngine.notifyState();
     
     if (window.forexTradingEngine.isAutoTrading) {
         window.forexTradingEngine.evaluateRobotStrategy(window.forexChartEngine, window.forexNewsEngine, true);

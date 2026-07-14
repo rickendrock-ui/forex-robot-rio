@@ -1329,3 +1329,21 @@ input:checked + .slider:before {
         transform: scale(1);
     }
 }
+
+.btn-close-position {
+    background: rgba(255, 0, 127, 0.1);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-close-position:hover {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 0 10px var(--danger-glow);
+}
