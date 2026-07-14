@@ -1330,3 +1330,45 @@ input:checked + .slider:before {
     color: #fff;
     box-shadow: 0 0 10px var(--danger-glow);
 }
+
+/* --- 3D and Embossed Typography and Alive Text Effects --- */
+
+/* Embossed 3D Letterpress for headings */
+h1, h2, h3, h4, .glass-card-title {
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 4px rgba(15, 23, 42, 0.08);
+    transition: var(--transition);
+}
+
+/* Floating Volumetric 3D for big numbers & clock values */
+.tech-font, #widgetClock, #realtimeBalance, #finRealtimeBalance, #statWinRate, #statNetProfit, #statTotalTrades {
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 3px rgba(15, 23, 42, 0.1), 0 4px 8px rgba(15, 23, 42, 0.05);
+    display: inline-block;
+    transition: var(--transition);
+}
+
+/* Make numbers/values pulse scale & glow on hover */
+.tech-font:hover, #widgetClock:hover, #realtimeBalance:hover, #finRealtimeBalance:hover, #statWinRate:hover, #statNetProfit:hover, #statTotalTrades:hover {
+    transform: scale(1.03) translateY(-2px);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 6px rgba(15, 23, 42, 0.15), 0 8px 16px var(--primary-glow);
+}
+
+/* Advanced filter shadow to give RICKTRADES logo a glossy 3D depth and soft neon pulse */
+.brand-name {
+    filter: drop-shadow(0 2px 4px rgba(0, 112, 243, 0.25)) drop-shadow(0 4px 12px rgba(121, 40, 202, 0.15));
+    transition: var(--transition);
+    animation: text-pulse-glow 4s infinite alternate ease-in-out;
+}
+
+.brand-name:hover {
+    transform: scale(1.04) rotate(-1deg);
+    filter: drop-shadow(0 4px 8px rgba(0, 112, 243, 0.45)) drop-shadow(0 8px 20px rgba(121, 40, 202, 0.3));
+}
+
+@keyframes text-pulse-glow {
+    0% {
+        filter: drop-shadow(0 2px 4px rgba(0, 112, 243, 0.2)) drop-shadow(0 4px 10px rgba(121, 40, 202, 0.1));
+    }
+    100% {
+        filter: drop-shadow(0 3px 8px rgba(0, 112, 243, 0.35)) drop-shadow(0 6px 16px rgba(121, 40, 202, 0.2));
+    }
+}

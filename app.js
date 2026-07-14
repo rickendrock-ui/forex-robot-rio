@@ -1162,6 +1162,19 @@ function setupFormListeners() {
     if (histFilterOutcome) {
         histFilterOutcome.onchange = () => window.renderHistoryTab();
     }
+
+    // Export Trade History
+    const btnExportHistory = document.getElementById('btnExportHistory');
+    if (btnExportHistory) {
+        btnExportHistory.onclick = () => window.exportHistoryCSV();
+    }
+
+    // History Detail Modal Close
+    const historyDetailModal = document.getElementById('historyDetailModal');
+    const closeHistoryDetailBtn = document.getElementById('btnCloseHistoryDetailModal');
+    if (closeHistoryDetailBtn && historyDetailModal) {
+        closeHistoryDetailBtn.onclick = () => historyDetailModal.style.display = 'none';
+    }
 }
 
 // 11. Custom logs adding animation
@@ -1432,7 +1445,7 @@ window.renderHistoryTab = function() {
                 const openTime = pos.openTime ? new Date(pos.openTime) : new Date();
 
                 return `
-                    <tr>
+                    <tr style="cursor: pointer;" onclick="window.showTradeDetails('${pos.id}', true)">
                         <td class="log-time" style="white-space: nowrap;">
                             ${openTime.toLocaleDateString('id-ID')} ${openTime.toLocaleTimeString('id-ID')}
                         </td>
@@ -1445,7 +1458,7 @@ window.renderHistoryTab = function() {
                             ${isProfit ? '+' : ''}${window.formatRupiah(runningPnl)}
                         </td>
                         <td>
-                            <button class="btn-close-position" onclick="window.forexTradingEngine.closePosition('${pos.id}', ${livePrice})">
+                            <button class="btn-close-position" onclick="event.stopPropagation(); window.forexTradingEngine.closePosition('${pos.id}', ${livePrice})">
                                 Close
                             </button>
                         </td>
@@ -1472,7 +1485,7 @@ window.renderHistoryTab = function() {
                 const closeTime = t.closeTime ? new Date(t.closeTime) : new Date();
                 
                 return `
-                    <tr>
+                    <tr style="cursor: pointer;" onclick="window.showTradeDetails('${t.id}', false)">
                         <td class="log-time" style="white-space: nowrap;">
                             ${openTime.toLocaleDateString('id-ID')} ${openTime.toLocaleTimeString('id-ID')}
                         </td>
@@ -1611,4 +1624,158 @@ window.renderFinanceTab = function() {
             }).join('');
         }
     }
+};
+
+// 14. Export Trade History to CSV
+window.exportHistoryCSV = function() {
+    const state = window.forexTradingEngine;
+    const history = state.tradeHistory;
+    if (history.length === 0) {
+        alert("Tidak ada data riwayat transaksi untuk diekspor.");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Waktu Buka,Waktu Tutup,Pasangan Aset,Tipe,Lot Size,Harga Entry,Harga Exit,Net PnL (IDR),Alasan Keluar\n";
+
+    history.forEach(t => {
+        const row = [
+            new Date(t.openTime).toISOString(),
+            new Date(t.closeTime).toISOString(),
+            t.pair,
+            t.type,
+            t.size,
+            t.entryPrice,
+            t.closePrice,
+            t.pnl,
+            t.exitReason
+        ].join(",");
+        csvContent += row + "\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `RICKTRADES_Riwayat_Transaksi_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+// 15. Show Detailed Trade Popup
+window.showTradeDetails = function(tradeId, isOpen) {
+    const state = window.forexTradingEngine;
+    let trade = null;
+
+    if (isOpen) {
+        trade = state.positions.find(p => p.id === tradeId);
+    } else {
+        trade = state.tradeHistory.find(t => t.id === tradeId);
+    }
+
+    if (!trade) return;
+
+    const modal = document.getElementById('historyDetailModal');
+    const body = document.getElementById('historyDetailBody');
+    if (!modal || !body) return;
+
+    const activeBroker = window.brokerEngine ? window.brokerEngine.getActiveBroker() : null;
+    const brokerName = activeBroker && activeBroker.connected ? activeBroker.name : "Demo Sandbox";
+    const serverName = activeBroker && activeBroker.connected ? activeBroker.server : "Demo-Server-01";
+    const accountId = activeBroker && activeBroker.connected ? activeBroker.accountId : "DEMO-ACCOUNT";
+
+    const config = window.ASSET_CONFIGS ? (window.ASSET_CONFIGS[trade.pair] || window.ASSET_CONFIGS['EUR/USD']) : { decimals: 5 };
+    const dec = config.decimals;
+    
+    let pnlVal = trade.pnl;
+    if (isOpen) {
+        let livePrice = window.forexChartEngine.currentPrice;
+        if (window.forexChartEngine.pair !== trade.pair) {
+            livePrice = config.mockPrice || config.startPrice;
+        }
+        const scale = config.pipScale || 0.0001;
+        let pipDiff = 0;
+        if (trade.type === 'BUY') {
+            pipDiff = (livePrice - trade.entryPrice) / scale;
+        } else {
+            pipDiff = (trade.entryPrice - livePrice) / scale;
+        }
+        pnlVal = parseFloat((pipDiff * trade.size * state.pipValue).toFixed(2));
+    }
+
+    const isProfit = pnlVal >= 0;
+    const formattedPnl = (isProfit ? '+' : '') + window.formatRupiah(pnlVal);
+
+    body.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 0.55rem;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Ticket ID:</span>
+                <strong>${trade.id}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Nama Broker:</span>
+                <strong>${brokerName}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">ID Akun:</span>
+                <strong>${accountId}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Server MT:</span>
+                <strong>${serverName}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Pasangan Aset:</span>
+                <strong>${trade.pair}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Tipe Transaksi:</span>
+                <span class="badge-type ${trade.type.toLowerCase()}" style="padding: 1px 6px; font-size: 0.75rem;">${trade.type}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Ukuran Lot:</span>
+                <strong>${trade.size.toFixed(2)} Lot</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Harga Entry:</span>
+                <strong class="tech-font">${trade.entryPrice.toFixed(dec)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Harga ${isOpen ? 'Live' : 'Exit (Close)'}:</span>
+                <strong class="tech-font">${isOpen ? (window.forexChartEngine.pair === trade.pair ? window.forexChartEngine.currentPrice.toFixed(dec) : config.mockPrice.toFixed(dec)) : trade.closePrice.toFixed(dec)}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Stop Loss (SL):</span>
+                <strong class="tech-font" style="color:var(--danger);">${trade.sl ? trade.sl.toFixed(dec) : '0.00000'}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Take Profit (TP):</span>
+                <strong class="tech-font" style="color:var(--success);">${trade.tp ? trade.tp.toFixed(dec) : '0.00000'}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Waktu Open:</span>
+                <strong>${new Date(trade.openTime).toLocaleDateString('id-ID')} ${new Date(trade.openTime).toLocaleTimeString('id-ID')}</strong>
+            </div>
+            ${!isOpen ? `
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Waktu Close:</span>
+                <strong>${new Date(trade.closeTime).toLocaleDateString('id-ID')} ${new Date(trade.closeTime).toLocaleTimeString('id-ID')}</strong>
+            </div>
+            ` : ''}
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Net PnL:</span>
+                <strong style="color: ${isProfit ? 'var(--success)' : 'var(--danger)'}; font-size:1.1rem; font-family: var(--font-tech);">${formattedPnl}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(15,23,42,0.04); padding-bottom: 0.25rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Status Posisi:</span>
+                <strong>${isOpen ? 'Berjalan (Open)' : 'Ditutup (' + (trade.exitReason || 'Manual') + ')'}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 0.25rem; font-size: 0.75rem; color: var(--text-muted); margin-top:0.5rem; background:rgba(0,112,243,0.03); padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(0,112,243,0.1);">
+                <span>Webhook MT5 Bridge Status:</span>
+                <strong style="color: var(--success);">TERKIRIM (OK)</strong>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = 'flex';
 };

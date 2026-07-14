@@ -592,6 +592,9 @@
                                     <option value="PROFIT">Hanya Profit</option>
                                     <option value="LOSS">Hanya Loss</option>
                                 </select>
+                                <button class="btn-primary" id="btnExportHistory" style="margin-left: auto; padding: 0.4rem 1rem; font-size: 0.8rem; background: var(--bg-panel-solid); color: var(--primary); border: 1px solid var(--primary); border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    Ekspor CSV
+                                </button>
                             </div>
 
                             <div class="pos-table-container">
@@ -699,6 +702,19 @@
                 </div>
                 <button type="submit" class="btn-primary" style="width: 100%;">Simpan Jurnal & Target</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Detail Transaksi (Glassmorphism Overlay) -->
+    <div class="modal-overlay" id="historyDetailModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                <span style="font-weight: 600; color: var(--primary);">Detail Transaksi Broker</span>
+                <span class="modal-close" id="btnCloseHistoryDetailModal">&times;</span>
+            </div>
+            <div id="historyDetailBody" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-main); margin-top: 1rem;">
+                <!-- Loaded dynamically -->
+            </div>
         </div>
     </div>
 
