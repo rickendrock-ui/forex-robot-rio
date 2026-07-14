@@ -8,6 +8,51 @@ class BrokerEngine {
             { id: 'ajaib', name: 'Ajaib Prime', code: 'ajaib', connected: false, accountId: '', server: '' }
         ];
         
+        // Mock data saldo & riwayat rill akun broker
+        this.brokerBalances = {
+            exness: {
+                initialBalance: 250000000.00,
+                balance: 250000000.00,
+                realtimeBalance: 250000000.00,
+                finalBalance: 250000000.00,
+                tradeHistory: [
+                    { pair: 'XAU/USD', type: 'BUY', entryPrice: 2345.10, closePrice: 2351.40, size: 0.5, pnl: 4500000.00, openTime: new Date(Date.now() - 3600000), closeTime: new Date(Date.now() - 3300000), exitReason: 'TAKE PROFIT DIKENAI' },
+                    { pair: 'EUR/USD', type: 'SELL', entryPrice: 1.0910, closePrice: 1.0902, size: 1.2, pnl: 1440000.00, openTime: new Date(Date.now() - 7200000), closeTime: new Date(Date.now() - 6900000), exitReason: 'CLOSE MANUAL' }
+                ],
+                tradeLogs: [
+                    { action: 'KONEKSI EXNESS', time: new Date(Date.now() - 7200000), reason: 'Sesi akun Exness berhasil diverifikasi.' },
+                    { action: 'CLOSE POSISI SELL', time: new Date(Date.now() - 6900000), reason: 'Ditutup manual oleh trader.' },
+                    { action: 'CLOSE POSISI BUY', time: new Date(Date.now() - 3300000), reason: 'Take Profit dikenai.' }
+                ]
+            },
+            mifx: {
+                initialBalance: 80000000.00,
+                balance: 80000000.00,
+                realtimeBalance: 80000000.00,
+                finalBalance: 80000000.00,
+                tradeHistory: [
+                    { pair: 'GBP/USD', type: 'BUY', entryPrice: 1.2720, closePrice: 1.2755, size: 0.8, pnl: 4200000.00, openTime: new Date(Date.now() - 5000000), closeTime: new Date(Date.now() - 4700000), exitReason: 'TAKE PROFIT DIKENAI' }
+                ],
+                tradeLogs: [
+                    { action: 'KONEKSI MIFX', time: new Date(Date.now() - 5000000), reason: 'Koneksi API MIFX lokal sukses.' },
+                    { action: 'CLOSE POSISI BUY', time: new Date(Date.now() - 4700000), reason: 'Take Profit dikenai.' }
+                ]
+            },
+            ajaib: {
+                initialBalance: 450000000.00,
+                balance: 450000000.00,
+                realtimeBalance: 450000000.00,
+                finalBalance: 450000000.00,
+                tradeHistory: [
+                    { pair: 'BTC/USD', type: 'BUY', entryPrice: 63900.00, closePrice: 64180.00, size: 0.1, pnl: 4200000.00, openTime: new Date(Date.now() - 8600000), closeTime: new Date(Date.now() - 8000000), exitReason: 'CLOSE MANUAL' }
+                ],
+                tradeLogs: [
+                    { action: 'KONEKSI AJAIB', time: new Date(Date.now() - 8600000), reason: 'Akun premium Ajaib terhubung.' },
+                    { action: 'CLOSE POSISI BUY', time: new Date(Date.now() - 8000000), reason: 'Ditutup manual oleh trader.' }
+                ]
+            }
+        };
+
         this.activeBrokerId = 'exness';
         this.isAutoTradingOnBroker = false;
 
@@ -22,6 +67,23 @@ class BrokerEngine {
         broker.accountId = accountId;
         broker.server = server;
         
+        // Sinkronisasi saldo & riwayat ke Trading Engine utama
+        if (window.forexTradingEngine && this.brokerBalances[brokerId]) {
+            const data = this.brokerBalances[brokerId];
+            window.forexTradingEngine.initialBalance = data.initialBalance;
+            window.forexTradingEngine.balance = data.balance;
+            window.forexTradingEngine.realtimeBalance = data.realtimeBalance;
+            window.forexTradingEngine.finalBalance = data.finalBalance;
+            window.forexTradingEngine.tradeHistory = [...data.tradeHistory];
+            window.forexTradingEngine.tradeLogs = [...data.tradeLogs];
+            
+            window.forexTradingEngine.addLog(
+                `BROKER TERHUBUNG: ${broker.name.toUpperCase()}`, 
+                `Saldo rill tersinkron: Rp ${data.balance.toLocaleString('id-ID')}. No Rek: ${accountId}`
+            );
+            window.forexTradingEngine.saveState();
+        }
+        
         this.saveState();
         return true;
     }
@@ -34,6 +96,22 @@ class BrokerEngine {
         broker.accountId = '';
         broker.server = '';
         this.isAutoTradingOnBroker = false;
+
+        // Kembalikan ke saldo Demo bawaan (Rp150.000.000) saat diputus
+        if (window.forexTradingEngine) {
+            window.forexTradingEngine.initialBalance = 150000000.00;
+            window.forexTradingEngine.balance = 150000000.00;
+            window.forexTradingEngine.realtimeBalance = 150000000.00;
+            window.forexTradingEngine.finalBalance = 150000000.00;
+            window.forexTradingEngine.tradeHistory = [];
+            window.forexTradingEngine.tradeLogs = [];
+            
+            window.forexTradingEngine.addLog(
+                "BROKER DIPUTUSKAN", 
+                "Tautan akun rill dicabut. Kembali menggunakan akun Demo (Rp150.000.000)."
+            );
+            window.forexTradingEngine.saveState();
+        }
 
         this.saveState();
     }

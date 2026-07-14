@@ -14,8 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize clock and weather widgets
     initClockAndWeather();
 
-    // Initialize Canvas Chart Engine
-    window.forexChartEngine.init('chartCanvas', 'EUR/USD');
+    // Initialize Canvas Chart Engine with loaded pair from state
+    let startPair = 'EUR/USD';
+    const savedRobotState = localStorage.getItem('forex_robot_state');
+    if (savedRobotState) {
+        try {
+            startPair = JSON.parse(savedRobotState).currentPair || 'EUR/USD';
+        } catch (e) {}
+    }
+    window.forexChartEngine.init('chartCanvas', startPair);
 
     // Bind state changes to DOM updates
     window.forexTradingEngine.subscribeStateChange(updateDOM);
@@ -32,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderJournal();
     renderFormulas();
     renderBrokerView();
+    renderAssetsTab();
 
     // Start Simulation Loops
     startSimulationLoops();
@@ -111,8 +119,9 @@ function initClockAndWeather() {
 function startSimulationLoops() {
     // 1. Tick price every 1 second
     setInterval(() => {
-        // Price fluctuations
-        const change = (Math.random() - 0.5) * 0.00015;
+        // Price fluctuations based on selected asset volatility
+        const vol = window.forexChartEngine.getVolatility();
+        const change = (Math.random() - 0.5) * vol * 0.75;
         window.forexChartEngine.tick(change);
 
         // Update trading floating profit/loss
@@ -120,6 +129,9 @@ function startSimulationLoops() {
 
         // Render predictions & current prices on UI
         updatePricePredictions();
+
+        // Render assets tab prices live
+        renderAssetsTab();
     }, 1000);
 
     // 2. Add new candle every 30 seconds (speed up from 60s for demo interactivity)
@@ -195,14 +207,16 @@ function updateDOM(state) {
         } else {
             tbody.innerHTML = state.positions.map(pos => {
                 const isProfit = pos.pnl >= 0;
+                const config = window.ASSET_CONFIGS ? (window.ASSET_CONFIGS[pos.pair] || window.ASSET_CONFIGS['EUR/USD']) : { decimals: 5 };
+                const dec = config.decimals;
                 return `
                     <tr>
                         <td><strong>${pos.pair}</strong></td>
                         <td><span class="badge-type ${pos.type.toLowerCase()}">${pos.type}</span></td>
-                        <td class="tech-font">${pos.entryPrice.toFixed(5)}</td>
+                        <td class="tech-font">${pos.entryPrice.toFixed(dec)}</td>
                         <td class="tech-font">${pos.size.toFixed(2)} Lot</td>
-                        <td class="tech-font" style="color: var(--danger)">${pos.sl.toFixed(5)}</td>
-                        <td class="tech-font" style="color: var(--success)">${pos.tp.toFixed(5)}</td>
+                        <td class="tech-font" style="color: var(--danger)">${pos.sl.toFixed(dec)}</td>
+                        <td class="tech-font" style="color: var(--success)">${pos.tp.toFixed(dec)}</td>
                         <td class="tech-font" style="color: ${isProfit ? 'var(--success)' : 'var(--danger)'}; font-weight: bold;">
                             ${isProfit ? '+' : ''}${window.formatRupiah(pos.pnl)}
                         </td>
@@ -900,6 +914,40 @@ function setupFormListeners() {
         };
     }
 
+    // Asset Selector binding & initialization
+    const assetSel = document.getElementById('assetSelector');
+    const predictAssetLbl = document.getElementById('predictAssetLabel');
+    if (assetSel) {
+        // Sync with loaded state
+        const loadedPair = window.forexTradingEngine.currentPair || 'EUR/USD';
+        assetSel.value = loadedPair;
+        
+        // Initialize chart with loaded pair
+        window.forexChartEngine.pair = loadedPair;
+        
+        // Update labels
+        if (buyBtn) buyBtn.textContent = `BUY (${loadedPair})`;
+        if (sellBtn) sellBtn.textContent = `SELL (${loadedPair})`;
+        if (predictAssetLbl) predictAssetLbl.textContent = loadedPair;
+
+        assetSel.onchange = (e) => {
+            const newPair = e.target.value;
+            window.forexTradingEngine.currentPair = newPair;
+            window.forexChartEngine.switchPair(newPair);
+            
+            if (buyBtn) buyBtn.textContent = `BUY (${newPair})`;
+            if (sellBtn) sellBtn.textContent = `SELL (${newPair})`;
+            if (predictAssetLbl) predictAssetLbl.textContent = newPair;
+            
+            window.forexTradingEngine.saveState();
+            
+            // Segera analisa dan buka posisi jika robot menyala
+            if (window.forexTradingEngine.isAutoTrading) {
+                window.forexTradingEngine.evaluateRobotStrategy(window.forexChartEngine, window.forexNewsEngine, true);
+            }
+        };
+    }
+
     // Modal elements
     const journalModal = document.getElementById('journalModal');
     const openJournalModalBtn = document.getElementById('btnOpenJournalModal');
@@ -1001,3 +1049,97 @@ function setupTiltEffect() {
         });
     });
 }
+
+// 13. Dynamic Assets selection tab logic (Live Prices, Category Badges & Activation)
+window.renderAssetsTab = function() {
+    const grid = document.getElementById('assetsGridContainer');
+    if (!grid) return;
+
+    const activePair = window.forexTradingEngine.currentPair || 'EUR/USD';
+    const configs = window.ASSET_CONFIGS;
+    if (!configs) return;
+
+    grid.innerHTML = Object.entries(configs).map(([symbol, cfg]) => {
+        const isActive = symbol === activePair;
+        let currentVal = cfg.startPrice;
+        
+        if (isActive && window.forexChartEngine.pair === symbol) {
+            currentVal = window.forexChartEngine.currentPrice;
+        } else {
+            if (!cfg.mockPrice) cfg.mockPrice = cfg.startPrice;
+            // Simulasikan pergerakan kecil agar tampak "hidup"
+            cfg.mockPrice += (Math.random() - 0.5) * cfg.volatility * 0.4;
+            currentVal = cfg.mockPrice;
+        }
+
+        const formattedPrice = currentVal.toFixed(cfg.decimals);
+        let assetType = 'Mata Uang (Forex)';
+        let badgeClass = 'buy';
+        
+        if (symbol === 'XAU/USD') {
+            assetType = 'Komoditas (Emas)';
+            badgeClass = 'neutral';
+        } else if (symbol.includes('ETH') || symbol.includes('BTC')) {
+            assetType = 'Aset Kripto';
+            badgeClass = 'sell';
+        }
+
+        const volLabel = cfg.volatility > 5 ? 'VIVID' : (cfg.volatility > 0.5 ? 'MODERATE' : 'STABLE');
+
+        return `
+            <div class="broker-select-card ${isActive ? 'active' : ''}" style="display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; padding: 1.25rem; min-height: 160px; transition: all 0.3s ease; cursor: default; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                    <div>
+                        <div style="font-family: var(--font-tech); font-size: 1.2rem; font-weight: bold; color: #fff;">${symbol}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;">${assetType}</div>
+                    </div>
+                    <span class="badge-type ${badgeClass}" style="padding: 0.15rem 0.4rem; font-size: 0.7rem;">
+                        ${volLabel}
+                    </span>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Harga Live</div>
+                    <div class="tech-font" style="font-size: 1.4rem; font-weight: bold; color: ${isActive ? 'var(--success)' : 'var(--primary)'}; margin-top: 0.2rem;">
+                        ${formattedPrice}
+                    </div>
+                </div>
+
+                <div>
+                    ${isActive ? `
+                        <button class="btn-primary" style="width: 100%; padding: 0.5rem; background: rgba(0, 255, 135, 0.15); border: 1px solid var(--success); color: var(--success); cursor: default;" disabled>
+                            Aset Aktif
+                        </button>
+                    ` : `
+                        <button class="btn-primary" style="width: 100%; padding: 0.5rem;" onclick="activateAssetFromTab('${symbol}')">
+                            Aktifkan Trading
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+window.activateAssetFromTab = function(symbol) {
+    window.forexTradingEngine.currentPair = symbol;
+    window.forexChartEngine.switchPair(symbol);
+    
+    const buyBtn = document.getElementById('btnBuyManual');
+    const sellBtn = document.getElementById('btnSellManual');
+    const predictAssetLbl = document.getElementById('predictAssetLabel');
+    const assetSel = document.getElementById('assetSelector');
+    
+    if (buyBtn) buyBtn.textContent = `BUY (${symbol})`;
+    if (sellBtn) sellBtn.textContent = `SELL (${symbol})`;
+    if (predictAssetLbl) predictAssetLbl.textContent = symbol;
+    if (assetSel) assetSel.value = symbol;
+
+    window.forexTradingEngine.saveState();
+    
+    if (window.forexTradingEngine.isAutoTrading) {
+        window.forexTradingEngine.evaluateRobotStrategy(window.forexChartEngine, window.forexNewsEngine, true);
+    }
+
+    window.renderAssetsTab();
+};

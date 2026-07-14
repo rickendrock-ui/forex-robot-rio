@@ -3,6 +3,7 @@
 class ForexTradingEngine {
     constructor() {
         this.isAutoTrading = false;
+        this.currentPair = 'EUR/USD';
         
         // Balances
         this.initialBalance = 150000000.00;
@@ -33,6 +34,11 @@ class ForexTradingEngine {
         this.addLog("Auto Trading DIAKTIFKAN", "Robot mulai memantau indikator teknikal dan berita fundamental untuk eksekusi otomatis.");
         this.saveState();
         this.notifyState();
+        
+        // Segera analisa dan buka posisi saat robot dinyalakan
+        setTimeout(() => {
+            this.evaluateRobotStrategy(window.forexChartEngine, window.forexNewsEngine, true);
+        }, 100);
     }
 
     stopAutoTrading() {
@@ -44,14 +50,29 @@ class ForexTradingEngine {
     }
 
     resetAccount() {
-        this.initialBalance = 150000000.00;
-        this.balance = 150000000.00;
-        this.realtimeBalance = 150000000.00;
-        this.finalBalance = 150000000.00;
-        this.positions = [];
-        this.tradeHistory = [];
-        this.tradeLogs = [];
-        this.addLog("Akun Direset", "Semua riwayat perdagangan dan saldo telah diatur ulang ke kondisi awal (Rp150.000.000).");
+        const activeBroker = window.brokerEngine ? window.brokerEngine.getActiveBroker() : null;
+        const connectedBroker = activeBroker && activeBroker.connected ? activeBroker : null;
+        
+        if (connectedBroker && window.brokerEngine.brokerBalances[connectedBroker.id]) {
+            const data = window.brokerEngine.brokerBalances[connectedBroker.id];
+            this.initialBalance = data.initialBalance;
+            this.balance = data.balance;
+            this.realtimeBalance = data.realtimeBalance;
+            this.finalBalance = data.finalBalance;
+            this.positions = [];
+            this.tradeHistory = [...data.tradeHistory];
+            this.tradeLogs = [...data.tradeLogs];
+            this.addLog("Akun Broker Sinkron", `Data akun rill broker ${connectedBroker.name} telah disinkronkan ulang.`);
+        } else {
+            this.initialBalance = 150000000.00;
+            this.balance = 150000000.00;
+            this.realtimeBalance = 150000000.00;
+            this.finalBalance = 150000000.00;
+            this.positions = [];
+            this.tradeHistory = [];
+            this.tradeLogs = [];
+            this.addLog("Akun Direset", "Semua riwayat perdagangan dan saldo telah diatur ulang ke kondisi awal (Rp150.000.000).");
+        }
         this.saveState();
         this.notifyState();
     }
@@ -96,15 +117,13 @@ class ForexTradingEngine {
         let floatingPnL = 0;
         
         // Loop backwards to allow safely removing closed positions
-        for (let i = this.positions.length - 1; i >= 0; i--) {
-            const pos = this.positions[i];
-            
-            // Calculate Profit/Loss in Pips
+            const config = window.ASSET_CONFIGS ? (window.ASSET_CONFIGS[pos.pair] || window.ASSET_CONFIGS['EUR/USD']) : { pipScale: 0.0001 };
+            const scale = config.pipScale;
             let pipDiff = 0;
             if (pos.type === 'BUY') {
-                pipDiff = (currentPrice - pos.entryPrice) * 10000; // 4 decimals = 1 pip
+                pipDiff = (currentPrice - pos.entryPrice) / scale;
             } else {
-                pipDiff = (pos.entryPrice - currentPrice) * 10000;
+                pipDiff = (pos.entryPrice - currentPrice) / scale;
             }
 
             // PnL in IDR = Selisih Pip * Lot size * Nilai Pip per Lot
@@ -143,37 +162,40 @@ class ForexTradingEngine {
 
         // Calculate Position Sizing (Risk Management)
         // Standard formula: Size = (Balance * Risk%) / (SL in pips * pip value)
-        // Risk: 1% of Rp150M = Rp1.5M. SL = 30 pips. Size = 1,500,000 / (30 * 150,000) = 0.33 Lots.
+        const config = window.ASSET_CONFIGS ? (window.ASSET_CONFIGS[this.currentPair] || window.ASSET_CONFIGS['EUR/USD']) : { pipScale: 0.0001, decimals: 5 };
+        const scale = config.pipScale;
+        const isScalp = reason.includes("[Scalping HFT]");
+        
         const balanceToRisk = this.balance * (this.riskPercent / 100);
-        const slPips = 30; // 30 pips safe distance
-        const tpPips = 60; // 1:2 Risk-Reward
+        const slPips = isScalp ? 10 : 20; // 10 pips untuk scalping otomatis, 20 untuk manual
+        const tpPips = isScalp ? 30 : 50; // 30 pips target untuk scalping, 50 untuk manual
         
         const lotSize = parseFloat((balanceToRisk / (slPips * this.pipValue)).toFixed(2)) || 0.1;
 
         let slPrice, tpPrice;
         if (type === 'BUY') {
-            slPrice = price - (slPips * 0.0001);
-            tpPrice = price + (tpPips * 0.0001);
+            slPrice = price - (slPips * scale);
+            tpPrice = price + (tpPips * scale);
         } else {
-            slPrice = price + (slPips * 0.0001);
-            tpPrice = price - (tpPips * 0.0001);
+            slPrice = price + (slPips * scale);
+            tpPrice = price - (tpPips * scale);
         }
 
         const position = {
             id: 'pos_' + Date.now() + Math.floor(Math.random()*100),
-            pair: 'EUR/USD',
+            pair: this.currentPair,
             type,
             entryPrice: price,
             size: lotSize,
-            sl: parseFloat(slPrice.toFixed(5)),
-            tp: parseFloat(tpPrice.toFixed(5)),
+            sl: parseFloat(slPrice.toFixed(config.decimals)),
+            tp: parseFloat(tpPrice.toFixed(config.decimals)),
             pnl: 0.00,
             openTime: new Date(),
             reason
         };
 
         this.positions.push(position);
-        this.addLog(`OPEN POSISI ${type} (Lot: ${lotSize})`, reason);
+        this.addLog(`OPEN POSISI ${type} (${this.currentPair} Lot: ${lotSize})`, reason);
         this.saveState();
         this.notifyState();
     }
@@ -186,11 +208,13 @@ class ForexTradingEngine {
         const pos = this.positions[index];
         
         // Final PnL calculation
+        const config = window.ASSET_CONFIGS ? (window.ASSET_CONFIGS[pos.pair] || window.ASSET_CONFIGS['EUR/USD']) : { pipScale: 0.0001 };
+        const scale = config.pipScale;
         let pipDiff = 0;
         if (pos.type === 'BUY') {
-            pipDiff = (currentPrice - pos.entryPrice) * 10000;
+            pipDiff = (currentPrice - pos.entryPrice) / scale;
         } else {
-            pipDiff = (pos.entryPrice - currentPrice) * 10000;
+            pipDiff = (pos.entryPrice - currentPrice) / scale;
         }
         const finalPnL = parseFloat((pipDiff * pos.size * this.pipValue).toFixed(2));
         
@@ -216,47 +240,55 @@ class ForexTradingEngine {
     }
 
     // Run Strategy evaluations (Logic for the Auto-trading robot)
-    evaluateRobotStrategy(chartEngine, newsEngine) {
+    evaluateRobotStrategy(chartEngine, newsEngine, forceImmediate = false) {
         if (!this.isAutoTrading) return;
 
-        // Ensure we don't spam trades: wait at least 30 seconds between trades
-        const lastLog = this.tradeLogs[0];
-        if (lastLog && (Date.now() - new Date(lastLog.time).getTime() < 30000)) {
-            return; 
-        }
+        // Jangan buka posisi jika sudah mencapai batas maksimum (3)
+        if (this.positions.length >= 3) return;
 
-        // Get technical data
+        // Pastikan ada data chart yang cukup
         const candles = chartEngine.candles;
         if (candles.length < 20) return;
 
-        const lastCandle = candles[candles.length - 1];
-        const rsiVal = chartEngine.rsi[chartEngine.rsi.length - 1];
-        const emaVal = chartEngine.ema20[chartEngine.ema20.length - 1];
+        // Mengambil indikator teknikal & fundamental terkini
+        const rsiVal = chartEngine.rsi[chartEngine.rsi.length - 1] || 50;
+        const emaVal = chartEngine.ema20[chartEngine.ema20.length - 1] || chartEngine.currentPrice;
         const currentPrice = chartEngine.currentPrice;
-
-        // Technical Signals
-        let techSignal = 'NEUTRAL';
-        if (rsiVal < 35 && currentPrice > emaVal) {
-            techSignal = 'BULLISH'; // Oversold + price reclaiming EMA20
-        } else if (rsiVal > 65 && currentPrice < emaVal) {
-            techSignal = 'BEARISH'; // Overbought + price dropping below EMA20
-        }
-
-        // Fundamental Signals
         const sentimentVal = newsEngine.currentSentiment;
-        let fundSignal = 'NEUTRAL';
-        if (sentimentVal > 30) {
-            fundSignal = 'BULLISH';
-        } else if (sentimentVal < -30) {
-            fundSignal = 'BEARISH';
+
+        // Algoritma Formula Scalping Berakurasi Tinggi:
+        // Hitung Skor Sentimen dan Tren (-5 hingga +5)
+        let buyScore = 0;
+        
+        // 1. Teknikal: Posisi harga terhadap EMA 20
+        if (currentPrice > emaVal) buyScore += 2.0; // Harga di atas EMA 20 (Bullish Momentum)
+        else buyScore -= 2.0; // Harga di bawah EMA 20 (Bearish Momentum)
+
+        // 2. Teknikal: RSI Pullback / Rebound
+        if (rsiVal < 45) buyScore += 1.5; // Kondisi oversold/aman untuk beli (Bullish)
+        else if (rsiVal > 55) buyScore -= 1.5; // Kondisi overbought/risiko untuk jual (Bearish)
+
+        // 3. Fundamental: Sentimen Berita Makro
+        if (sentimentVal > 15) buyScore += 1.5; // Sentimen fundamental positif
+        else if (sentimentVal < -15) buyScore -= 1.5; // Sentimen fundamental negatif
+
+        // Ambil keputusan eksekusi:
+        // Jika forceImmediate = true (baru dinyalakan), langsung ambil sisi dominan.
+        // Jika normal, tunggu sinyal yang sangat kuat (Skor >= 2.5 untuk BUY, Skor <= -2.5 untuk SELL).
+        let signal = 'NEUTRAL';
+        if (forceImmediate) {
+            signal = buyScore >= 0 ? 'BUY' : 'SELL';
+        } else {
+            if (buyScore >= 2.5) signal = 'BUY';
+            else if (buyScore <= -2.5) signal = 'SELL';
         }
 
-        // Match Logic
-        if (techSignal === 'BULLISH' && fundSignal === 'BULLISH') {
-            const reason = `Teknikal (RSI=${rsiVal.toFixed(1)} oversold, Harga > EMA20) selaras dengan Fundamental Sentimen (${newsEngine.getSentimentLabel()}: ${sentimentVal}%).`;
+        const decimals = chartEngine.getDecimals();
+        if (signal === 'BUY') {
+            const reason = `[Scalping HFT] Sinyal Beli Akurat (Skor: ${buyScore.toFixed(1)}). Harga (${currentPrice.toFixed(decimals)}) di atas EMA20, RSI (${rsiVal.toFixed(1)}) aman, Sentimen (${sentimentVal}%).`;
             this.openPosition('BUY', currentPrice, reason);
-        } else if (techSignal === 'BEARISH' && fundSignal === 'BEARISH') {
-            const reason = `Teknikal (RSI=${rsiVal.toFixed(1)} overbought, Harga < EMA20) selaras dengan Fundamental Sentimen (${newsEngine.getSentimentLabel()}: ${sentimentVal}%).`;
+        } else if (signal === 'SELL') {
+            const reason = `[Scalping HFT] Sinyal Jual Akurat (Skor: ${buyScore.toFixed(1)}). Harga (${currentPrice.toFixed(decimals)}) di bawah EMA20, RSI (${rsiVal.toFixed(1)}) aman, Sentimen (${sentimentVal}%).`;
             this.openPosition('SELL', currentPrice, reason);
         }
     }
@@ -270,7 +302,8 @@ class ForexTradingEngine {
             finalBalance: this.finalBalance,
             positions: this.positions,
             tradeHistory: this.tradeHistory,
-            tradeLogs: this.tradeLogs
+            tradeLogs: this.tradeLogs,
+            currentPair: this.currentPair
         };
         localStorage.setItem('forex_robot_state', JSON.stringify(state));
     }
@@ -284,6 +317,7 @@ class ForexTradingEngine {
                 this.balance = state.balance ?? 150000000.00;
                 this.realtimeBalance = state.realtimeBalance ?? 150000000.00;
                 this.finalBalance = state.finalBalance ?? 150000000.00;
+                this.currentPair = state.currentPair ?? 'EUR/USD';
                 this.positions = state.positions ?? [];
                 
                 // Parse date strings back to Date objects

@@ -42,6 +42,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" data-target="assets-tab">
+                        <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 1.21-1.04 2.01-2.9 2.01-1.96 0-2.72-1.09-2.8-2.4H4c.09 2.22 1.86 3.61 3.8 4.13V21h3v-2.15c2-.39 3.8-1.59 3.8-3.69 0-2.8-2.5-3.66-4.8-4.26z"/></svg>
+                        Pilihan Aset
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" data-target="news-tab">
                         <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 10H5v-2h7v2zm3-4H5V8h10v2zm5 8H5v-2h15v2zm0-4h-3v-4h3v4z"/></svg>
                         Berita Forex
@@ -131,7 +137,7 @@
                         <h3 class="glass-card-title">
                             <span>
                                 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.47 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                                Estimasi Arah Harga (EUR/USD)
+                                Estimasi Arah Harga (<span id="predictAssetLabel">EUR/USD</span>)
                             </span>
                         </h3>
                         <div class="predictions-grid">
@@ -257,6 +263,15 @@
                                 <canvas id="chartCanvas"></canvas>
                             </div>
                             <div class="chart-controls">
+                                <div class="form-group" style="margin: 0; min-width: 180px;">
+                                    <select id="assetSelector" class="form-input" style="padding: 0.6rem; height: 100%; font-family: var(--font-tech); font-weight: bold; background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); color: #fff;">
+                                        <option value="EUR/USD" selected>EUR/USD (Euro)</option>
+                                        <option value="GBP/USD">GBP/USD (Poundsterling)</option>
+                                        <option value="XAU/USD">XAU/USD (Emas)</option>
+                                        <option value="ETH/USD">ETH/USD (Ethereum)</option>
+                                        <option value="BTC/USD">BTC/USD (Bitcoin)</option>
+                                    </select>
+                                </div>
                                 <button class="btn-trade btn-buy" id="btnBuyManual">BUY (EUR/USD)</button>
                                 <button class="btn-trade btn-sell" id="btnSellManual">SELL (EUR/USD)</button>
                             </div>
@@ -273,6 +288,25 @@
                             <div class="log-panel-body" id="logPanelBody">
                                 <!-- Logs dynamically injected -->
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2B. ASSETS SELECTION VIEW -->
+                <div id="assets-tab" class="viewport-panel">
+                    <div class="glass-card" style="margin-bottom: 1.5rem;">
+                        <h3 class="glass-card-title">
+                            <span>
+                                <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 1.21-1.04 2.01-2.9 2.01-1.96 0-2.72-1.09-2.8-2.4H4c.09 2.22 1.86 3.61 3.8 4.13V21h3v-2.15c2-.39 3.8-1.59 3.8-3.69 0-2.8-2.5-3.66-4.8-4.26z"/></svg>
+                                Pilihan Aset & Instrumen Trading
+                            </span>
+                        </h3>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5;">
+                            Pilih instrumen perdagangan aktif di bawah ini. Mengaktifkan aset akan memperbarui grafik utama, perkiraan indikator robot, tombol trading manual, serta target scalping secara langsung.
+                        </p>
+                        
+                        <div class="broker-list-cards" id="assetsGridContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+                            <!-- Assets cards dynamically injected -->
                         </div>
                     </div>
                 </div>

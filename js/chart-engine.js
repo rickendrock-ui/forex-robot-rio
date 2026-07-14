@@ -1,6 +1,15 @@
 // Forex Robot Chart Engine
 // Custom Canvas-based Candlestick & Technical Indicators renderer
 
+const ASSET_CONFIGS = {
+    'EUR/USD': { startPrice: 1.0925, volatility: 0.0002, decimals: 5, pipScale: 0.0001 },
+    'GBP/USD': { startPrice: 1.2750, volatility: 0.0002, decimals: 5, pipScale: 0.0001 },
+    'XAU/USD': { startPrice: 2350.50, volatility: 0.8, decimals: 2, pipScale: 0.1 },
+    'ETH/USD': { startPrice: 3120.00, volatility: 1.5, decimals: 2, pipScale: 1.0 },
+    'BTC/USD': { startPrice: 64250.00, volatility: 35.0, decimals: 2, pipScale: 1.0 }
+};
+window.ASSET_CONFIGS = ASSET_CONFIGS;
+
 class ForexChartEngine {
     constructor() {
         this.canvas = null;
@@ -60,15 +69,17 @@ class ForexChartEngine {
     }
 
     generateMockHistory() {
-        let price = this.currentPrice - 0.0050; // Start slightly lower
+        const config = ASSET_CONFIGS[this.pair] || ASSET_CONFIGS['EUR/USD'];
+        this.currentPrice = config.startPrice;
+        let price = this.currentPrice - (config.volatility * 20); // Start lower
         const now = Date.now();
         
         for (let i = 0; i < this.maxCandles; i++) {
             const open = price;
-            const change = (Math.random() - 0.49) * 0.0004;
+            const change = (Math.random() - 0.49) * config.volatility * 2;
             const close = price + change;
-            const high = Math.max(open, close) + Math.random() * 0.0002;
-            const low = Math.min(open, close) - Math.random() * 0.0002;
+            const high = Math.max(open, close) + Math.random() * config.volatility;
+            const low = Math.min(open, close) - Math.random() * config.volatility;
             
             this.candles.push({
                 time: new Date(now - (this.maxCandles - i) * 60000),
@@ -164,7 +175,24 @@ class ForexChartEngine {
             }
         }
     }
+    switchPair(newPair) {
+        this.pair = newPair;
+        const config = ASSET_CONFIGS[newPair] || ASSET_CONFIGS['EUR/USD'];
+        this.currentPrice = config.startPrice;
+        this.candles = [];
+        this.generateMockHistory();
+        this.draw();
+    }
 
+    getVolatility() {
+        const config = ASSET_CONFIGS[this.pair] || ASSET_CONFIGS['EUR/USD'];
+        return config.volatility;
+    }
+
+    getDecimals() {
+        const config = ASSET_CONFIGS[this.pair] || ASSET_CONFIGS['EUR/USD'];
+        return config.decimals;
+    }
     draw() {
         if (!this.ctx || !this.canvas) return;
         
@@ -332,7 +360,7 @@ class ForexChartEngine {
         for (let i = 0; i <= priceTicksCount; i++) {
             const priceVal = minPrice + (i / priceTicksCount) * (maxPrice - minPrice);
             const y = getY(priceVal);
-            ctx.fillText(priceVal.toFixed(5), width - this.paddingRight + 5, y + 3);
+            ctx.fillText(priceVal.toFixed(this.getDecimals()), width - this.paddingRight + 5, y + 3);
         }
 
         // Draw Current Price Horizontal Line & Tag
@@ -354,7 +382,7 @@ class ForexChartEngine {
         ctx.fillRect(width - this.paddingRight, currentY - 8, this.paddingRight, 16);
         ctx.fillStyle = '#070712';
         ctx.font = 'bold 10px Rajdhani';
-        ctx.fillText(this.currentPrice.toFixed(5), width - this.paddingRight + 4, currentY + 4);
+        ctx.fillText(this.currentPrice.toFixed(this.getDecimals()), width - this.paddingRight + 4, currentY + 4);
     }
 
     drawRsiChart(width, rsiTop, rsiHeight) {
@@ -404,7 +432,7 @@ class ForexChartEngine {
         
         ctx.fillStyle = '#00f2fe';
         ctx.font = '11px Outfit';
-        ctx.fillText(`EMA(20): ${this.ema20[this.ema20.length - 1]?.toFixed(5) || '0.00000'}`, this.paddingLeft + 160, this.paddingTop - 12);
+        ctx.fillText(`EMA(20): ${this.ema20[this.ema20.length - 1]?.toFixed(this.getDecimals()) || '0.00000'}`, this.paddingLeft + 160, this.paddingTop - 12);
     }
 }
 
